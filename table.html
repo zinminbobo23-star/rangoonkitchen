@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu - Rangoon Kitchen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database-compat.js"></script>
+    <style>
+        .orange-pattern { background-image: radial-gradient(#ffedd5 1px, transparent 1px); background-size: 20px 20px; }
+        .cart-float { box-shadow: 0 -4px 10px rgba(0,0,0,0.1); }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+</head>
+<body class="orange-pattern min-h-screen pb-24">
+
+    <nav class="bg-white p-4 shadow-sm sticky top-0 z-50 flex justify-between items-center border-b-2 border-orange-500">
+        <div>
+            <h1 class="text-xl font-bold text-orange-600">Rangoon Kitchen</h1>
+            <p id="table-display" class="text-xs text-gray-400 font-semibold">Table: Loading...</p>
+        </div>
+        <div class="relative">
+             <input type="text" id="search" onkeyup="searchMenu()" placeholder="Search..." class="border-orange-100 border rounded-full px-3 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500">
+        </div>
+    </nav>
+
+    <div class="flex gap-2 p-4 overflow-x-auto no-scrollbar">
+        <button onclick="filterCat('All')" class="bg-orange-500 text-white px-4 py-1 rounded-full text-sm shadow-md">အားလုံး</button>
+        <button onclick="filterCat('Food')" class="bg-white text-gray-600 px-4 py-1 rounded-full text-sm border border-orange-100">အစားအစာ</button>
+        <button onclick="filterCat('Drink')" class="bg-white text-gray-600 px-4 py-1 rounded-full text-sm border border-orange-100">သောက်စရာ</button>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 p-4" id="menu-grid">
+        </div>
+
+    <div class="fixed bottom-0 left-0 right-0 bg-white p-4 cart-float border-t border-orange-100 flex justify-between items-center">
+        <div>
+            <p class="text-xs text-gray-400">Total Amount</p>
+            <p id="total-price" class="text-lg font-bold text-orange-600">0 Ks</p>
+        </div>
+        <button onclick="placeOrder()" class="bg-orange-500 text-white px-8 py-2 rounded-xl font-bold hover:bg-orange-600 shadow-lg active:scale-95 transition">
+            Order မှာမည်
+        </button>
+    </div>
+
+    <script>
+        // --- Firebase Config ---
+        const firebaseConfig = {
+  apiKey: "AIzaSyC6aJ6JwNrjEKbnmcPKkqpjm0c6ok6cHas",
+  authDomain: "rangoon-kitchen.firebaseapp.com",
+  databaseURL: "https://rangoon-kitchen-default-rtdb.firebaseio.com",
+  projectId: "rangoon-kitchen",
+  storageBucket: "rangoon-kitchen.firebasestorage.app",
+  messagingSenderId: "939905185755",
+  appId: "1:939905185755:web:f462d65e5fdf65d2d359fe",
+  measurementId: "G-4BYF1NZKZJ"
+};
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // URL ကနေ Table ID ကို ဖတ်ခြင်း
+        const urlParams = new URLSearchParams(window.location.search);
+        const tableId = urlParams.get('id') || 'unknown';
+        document.getElementById('table-display').innerText = "Table ID: " + tableId;
+
+        let cart = {};
+        let allProducts = [];
+
+        // Menu ဆွဲထုတ်ခြင်း
+        db.ref('products').on('value', (snapshot) => {
+            const grid = document.getElementById('menu-grid');
+            grid.innerHTML = '';
+            allProducts = [];
+            snapshot.forEach((child) => {
+                const p = child.val();
+                allProducts.push(p);
+                renderCard(p);
+            });
+        });
+
+        function renderCard(p) {
+            const grid = document.getElementById('menu-grid');
+            grid.innerHTML += `
+                <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-orange-50">
+                    <img src="${p.img}" class="w-full h-32 object-cover">
+                    <div class="p-3">
+                        <h3 class="text-sm font-bold text-gray-800 truncate">${p.name}</h3>
+                        <p class="text-orange-500 font-bold text-sm">${p.price} Ks</p>
+                        <button onclick="addToCart('${p.id}', '${p.name}', ${p.price})" class="mt-2 w-full bg-orange-50 text-orange-600 py-1 rounded-lg text-xs font-bold border border-orange-200 active:bg-orange-500 active:text-white">
+                            + ပေါင်းမည်
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function addToCart(id, name, price) {
+            if(cart[id]) {
+                cart[id].qty += 1;
+            } else {
+                cart[id] = { name: name, price: price, qty: 1 };
+            }
+            updateTotal();
+        }
+
+        function updateTotal() {
+            let total = 0;
+            for(let id in cart) {
+                total += cart[id].price * cart[id].qty;
+            }
+            document.getElementById('total-price').innerText = total + " Ks";
+        }
+
+        function placeOrder() {
+            if(Object.keys(cart).length === 0) return alert("ဘာမှမမှာရသေးပါ!");
+            
+            const orderId = 'ord_' + Date.now();
+            const orderData = {
+                order_id: orderId,
+                table_id: tableId,
+                items: cart,
+                total: document.getElementById('total-price').innerText,
+                status: 'pending',
+                time: new Date().toLocaleTimeString()
+            };
+
+            db.ref('orders/' + orderId).set(orderData).then(() => {
+                alert("Order တင်ပြီးပါပြီ။ ခဏစောင့်ပေးပါခင်ဗျာ။");
+                cart = {};
+                updateTotal();
+            });
+        }
+        
+
+        // Search & Filter Logic များ...
+    </script>
+</body>
+</html>
