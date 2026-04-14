@@ -251,7 +251,7 @@ function showQR(id, name) {
     document.getElementById('qrcode').innerHTML = '';
     
     // URL ထဲမှာ စားပွဲနာမည် (name) ကိုပါ ထည့်ပေးလိုက်ပါမယ်
-    const tableUrl = `table.html?id=${id}&name=${encodeURIComponent(name)}`; 
+    const tableUrl = `https://github.com/zinminbobo23-star/rangoonkitchen/table.html?id=${id}&name=${encodeURIComponent(name)}`; 
     
     new QRCode(document.getElementById("qrcode"), {
         text: tableUrl,
