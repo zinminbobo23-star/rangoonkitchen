@@ -246,12 +246,13 @@ function completeOrder(id) {
     }
 }
 function showQR(id, name) {
+    // မင်းရဲ့ GitHub URL ကို အောက်မှာ အသေသတ်မှတ်ပေးလိုက်တာပါ
+    const baseUrl = "https://zinminbobo23-star.github.io/rangoonkitchen/table.html";
+    const tableUrl = `${baseUrl}?id=${id}&name=${encodeURIComponent(name)}`;
+    
     document.getElementById('qr-modal').classList.remove('hidden');
     document.getElementById('qr-title').innerText = name + " အတွက် QR Code";
     document.getElementById('qrcode').innerHTML = '';
-    
-    // URL ထဲမှာ စားပွဲနာမည် (name) ကိုပါ ထည့်ပေးလိုက်ပါမယ်
-    const tableUrl = `https://github.com/zinminbobo23-star/rangoonkitchen/table.html?id=${id}&name=${encodeURIComponent(name)}`; 
     
     new QRCode(document.getElementById("qrcode"), {
         text: tableUrl,
