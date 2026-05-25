@@ -182,17 +182,17 @@
         // --- ⚠️ Firebase Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyC6aJ6JwNrjEKbnmcPKkqpjm0c6ok6cHas",
-  authDomain: "rangoon-kitchen.firebaseapp.com",
-  databaseURL: "https://rangoon-kitchen-default-rtdb.firebaseio.com",
-  projectId: "rangoon-kitchen",
-  storageBucket: "rangoon-kitchen.firebasestorage.app",
-  messagingSenderId: "939905185755",
-  appId: "1:939905185755:web:f462d65e5fdf65d2d359fe""
+            authDomain: "rangoon-kitchen.firebaseapp.com",
+            databaseURL: "https://rangoon-kitchen-default-rtdb.firebaseio.com",
+            projectId: "rangoon-kitchen",
+            storageBucket: "rangoon-kitchen.firebasestorage.app",
+            messagingSenderId: "939905185755",
+            appId: "1:939905185755:web:f462d65e5fdf65d2d359fe"
         };
         
         let db;
         try {
-            if (firebaseConfig.apiKey !== "AIzaSyC6aJ6JwNrjEKbnmcPKkqpjm0c6ok6cHas" && !firebase.apps.length) {
+            if (firebaseConfig.apiKey !== "YOUR_API_KEY" && !firebase.apps.length) {
                 firebase.initializeApp(firebaseConfig);
                 db = firebase.database();
                 initFirebaseListeners();
