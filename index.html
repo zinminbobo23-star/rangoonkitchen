@@ -1,341 +1,393 @@
 <!DOCTYPE html>
-<html lang="my">
+<html lang="en" id="app-root" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Menu Admin - Main App</title>
+    <title>Rangoon Kitchen - Custom POS</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
     <style>
-        body { background-color: #fffaf5; font-family: 'Pyidaungsu', sans-serif; }
-        .orange-pattern { background-image: radial-gradient(#ffedd5 1px, transparent 1px); background-size: 20px 20px; }
+        .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+
+        @media print {
+            body * { visibility: hidden; background: white !important; color: black !important; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 10px !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .no-print { display: none !important; }
+        }
     </style>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-<div class="text-right">
-    <p class="text-xs text-gray-500">ယနေ့ရောင်းရငွေ</p>
-    <h2 id="daily-total-display" class="text-xl font-bold text-orange-600">0 Ks</h2>
-</div>
 </head>
-<body class="orange-pattern">
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex overflow-hidden transition-colors duration-200">
 
-    <nav class="bg-white border-b-4 border-orange-500 p-4 shadow-sm sticky top-0 z-10">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-orange-600">Smart Menu Admin</h1>
-            <div class="text-sm text-gray-500">Daily Total: <span id="daily-income" class="font-bold text-orange-600">0</span> Ks</div>
-        </div>
-        <div class="mt-8 bg-white p-6 rounded-xl shadow-lg border-t-4 border-orange-500">
-    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
-        <span class="relative flex h-3 w-3">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
-        </span>
-        ယနေ့အော်ဒါများ (New Orders)
-    </h2>
-    <div id="order-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        </div>
-</div>
-    </nav>
-
-    <div class="container mx-auto p-4 md:p-6">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <aside class="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between no-print">
+        <div>
+            <div class="p-6 border-b border-slate-200 dark:border-slate-800 bg-emerald-500/10">
+                <h1 class="text-xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">Rangoon Kitchen</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono">Custom POS v4.0</p>
+            </div>
             
-            <div class="bg-white p-6 rounded-xl shadow-lg border border-orange-100 h-fit">
-                <h2 class="text-xl font-bold mb-4 text-gray-700" id="form-title">ပစ္စည်းအသစ်ထည့်ရန်</h2>
-                <input type="hidden" id="product-id">
+            <nav class="p-4 space-y-1">
+                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 transition">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard
+                </button>
+                <button onclick="switchTab('menu')" id="btn-menu" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
+                    <i class="fa-solid fa-folder-plus"></i> Add Menu Items
+                </button>
+                <button onclick="switchTab('settings')" id="btn-settings" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition">
+                    <i class="fa-solid fa-sliders"></i> Settings
+                </button>
+            </nav>
+        </div>
+        <div class="p-4 border-t border-slate-200 dark:border-slate-800 text-center font-mono text-xs text-slate-400" id="live-clock">00:00:00 PM</div>
+    </aside>
+
+    <div class="flex-grow flex flex-col overflow-hidden">
+        
+        <main id="tab-dashboard" class="flex-grow flex overflow-hidden p-6 gap-6 tab-content">
+            
+            <section class="w-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col overflow-hidden shadow-sm">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-cash-register text-emerald-500"></i> Tables Billing Overview
+                </h2>
+                <div class="space-y-2 overflow-y-auto flex-grow pr-1 custom-scroll" id="dashboard-tables-list">
+                    <div class="text-center py-10 text-xs text-slate-400 font-mono">Waiting for active tables...</div>
+                </div>
+            </section>
+
+            <section class="w-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col overflow-hidden shadow-sm">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-bullhorn text-amber-500"></i> New Incoming Orders
+                </h2>
+                <div class="space-y-3 overflow-y-auto flex-grow pr-1 custom-scroll" id="dashboard-orders-pipeline">
+                    <div class="text-center py-10 text-xs text-slate-400 font-mono">No new live orders stream...</div>
+                </div>
+            </section>
+        </main>
+
+        <main id="tab-menu" class="flex-grow overflow-hidden hidden p-6 flex gap-6 tab-content">
+            <section class="w-1/3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col justify-between shadow-sm">
                 <div class="space-y-4">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Menu Structure Input</h2>
                     <div>
-                        <label class="block text-sm text-gray-600">ဓာတ်ပုံ URL</label>
-                        <input type="text" id="p-img" class="w-full border-orange-200 border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="https://...">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-600">အမည်</label>
-                        <input type="text" id="p-name" class="w-full border-orange-200 border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-600">ဈေးနှုန်း</label>
-                        <input type="number" id="p-price" class="w-full border-orange-200 border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-gray-600">Category</label>
-                        <select id="p-cat" class="w-full border-orange-200 border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-orange-500">
-                            <option value="Food">အစားအစာ</option>
-                            <option value="Drink">သောက်စရာ</option>
-                            <option value="Snack">အဆာပြေ</option>
+                        <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Main Category</label>
+                        <select id="menu-main-cat" onchange="loadSubTitlesDropdown()" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm text-slate-800 dark:text-slate-100">
+                            <option value="dishes">Dishes</option>
+                            <option value="drinks">Drinks</option>
+                            <option value="desserts">Desserts</option>
                         </select>
                     </div>
-                    <button onclick="saveProduct()" id="btn-save" class="w-full bg-orange-500 text-white font-bold py-3 rounded-lg hover:bg-orange-600 transition shadow-md">
-                        သိမ်းဆည်းမည်
-                    </button>
-                    <button onclick="resetForm()" id="btn-cancel" class="w-full bg-gray-200 text-gray-600 py-2 rounded-lg hidden">Cancel Edit</button>
-                </div>
-            </div>
-
-            <div class="lg:col-span-2">
-                <div class="bg-white p-4 rounded-xl shadow-sm mb-4 flex gap-2">
-                    <input type="text" id="search-bar" onkeyup="searchProduct()" class="w-full border-orange-100 border rounded-full px-4 py-2" placeholder="Search menu...">
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="product-list">
+                    <div class="bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                        <label class="text-[11px] font-bold uppercase tracking-wider text-emerald-500 block mb-1">Add New Sub-Title (Cuisine)</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="new-sub-title" placeholder="e.g., Myanmar Food" class="flex-grow bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 text-xs text-slate-800 dark:text-slate-100">
+                            <button onclick="addNewSubTitle()" class="bg-emerald-500 text-slate-950 font-bold px-3 py-2 rounded-lg text-xs hover:bg-emerald-600 transition">Add Title</button>
+                        </div>
                     </div>
-            </div>
+                    <div>
+                        <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Select Sub-Title Cuisine</label>
+                        <select id="menu-sub-title-select" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm text-slate-800 dark:text-slate-100"></select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Item Name</label>
+                            <input type="text" id="new-item-name" placeholder="e.g., Mohinga" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 dark:text-slate-100">
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Price (Ks)</label>
+                            <input type="number" id="new-item-price" placeholder="3500" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-800 dark:text-slate-100">
+                        </div>
+                    </div>
+                </div>
+                <button onclick="saveNewItem()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3.5 rounded-xl text-xs transition mt-4 shadow-lg shadow-emerald-500/10">
+                    + ADD ITEM TO DATABASE
+                </button>
+            </section>
+            <section class="flex-grow bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col overflow-hidden shadow-sm">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Live Structured Menu Tree</h2>
+                <div class="flex-grow overflow-y-auto pr-1 custom-scroll space-y-4" id="live-menu-tree">
+                    <div class="text-center py-10 text-xs text-slate-400 font-mono">No menus loaded...</div>
+                </div>
+            </section>
+        </main>
 
+        <main id="tab-settings" class="flex-grow overflow-hidden hidden p-6 tab-content no-print">
+            <div class="max-w-xl mx-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-6 shadow-sm">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800 pb-2"><i class="fa-solid fa-gear text-emerald-500 mr-1"></i> System Preferences</h2>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2">Display Theme Mode</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="setTheme('light')" class="p-3 border rounded-xl font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition">Light Theme</button>
+                        <button onclick="setTheme('dark')" class="p-3 border-2 border-emerald-500 bg-emerald-500/10 rounded-xl font-bold text-xs transition">Dark Theme</button>
+                    </div>
+                </div>
+                <div class="space-y-3 pt-2">
+                    <label class="text-xs font-bold text-slate-500 dark:text-slate-400 block">Universal Paper Size Settings</label>
+                    <div>
+                        <span class="text-[11px] text-slate-400 block mb-1">Select Receipt Width</span>
+                        <select id="setting-printer-size" onchange="adjustPaperWidthStyle()" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 dark:text-slate-100">
+                            <option value="58mm">58mm (Standard Mobile Thermal Roll)</option>
+                            <option value="80mm">80mm (Desktop Thermal Large Roll)</option>
+                        </select>
+                    </div>
+                    <button onclick="triggerSystemPrinterDialog()" class="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold py-3 rounded-xl text-xs transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-sliders text-emerald-500"></i> Open OS Printer System Dialog (Windows / Android)
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="checkout-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div id="print-area" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-sm w-full rounded-2xl p-5 shadow-2xl flex flex-col text-slate-800 dark:text-slate-100 transition-all" style="width: 58mm;">
+            <div class="text-center mb-3">
+                <h3 class="font-black text-base tracking-tight">RANGOON KITCHEN</h3>
+                <p class="text-[10px] text-slate-400">Custom Receipt Bill</p>
+            </div>
+            <div class="border-t border-b border-dashed border-slate-300 dark:border-slate-700 py-2 my-2 font-mono text-xs space-y-1">
+                <div class="flex justify-between"><span id="modal-table-title">TABLE: --</span><span id="bill-time">00:00</span></div>
+            </div>
+            <div class="font-mono text-xs space-y-2 max-h-48 overflow-y-auto mb-4 custom-scroll" id="modal-items-list"></div>
+            <div class="flex justify-between items-center border-t border-dashed border-slate-300 dark:border-slate-700 pt-3 mb-5">
+                <span class="text-xs font-bold uppercase text-slate-400">Total Amount</span>
+                <span class="text-base font-black font-mono text-emerald-500" id="modal-total-amount">0 Ks</span>
+            </div>
+            <div class="flex gap-2 no-print">
+                <button onclick="closeCheckoutModal()" class="w-1/3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 font-bold text-xs py-3 rounded-xl transition">Cancel</button>
+                <button onclick="triggerPrintSlip()" class="w-2/3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs py-3 rounded-xl transition shadow-md flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-print"></i> PRINT RECEIPT
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- Firebase Config ---
-const firebaseConfig = {
-    apiKey: "IzaSyC6aJ6JwNrjEKbnmcPKkqpjm0c6ok6cHas",
-    authDomain: "rangoon-kitchen.firebaseapp.com",
-    databaseURL: "https://rangoon-kitchen-default-rtdb.firebaseio.com",
-    projectId: "rangoon-kitchen",
-    storageBucket: "rangoon-kitchen.appspot.com",
-    messagingSenderId: "939905185755",
-    appId: "1:939905185755:web:f462d65e5fdf65d2d359fe"
-};
-
-
-// --- Initialize Firebase ---
-firebase.initializeApp(firebaseConfig);
-var db = firebase.database();
-
-        // --- Functions ---
+        // --- ⚠️ Firebase API Keys ပြောင်းရန်နေရာ ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyC6aJ6JwNrjEKbnmcPKkqpjm0c6ok6cHas",
+            authDomain: "rangoon-kitchen.firebaseapp.com",
+            databaseURL: "https://rangoon-kitchen-default-rtdb.firebaseio.com",
+            projectId: "rangoon-kitchen",
+            storageBucket: "rangoon-kitchen.firebasestorage.app",
+            messagingSenderId: "939905185755",
+            appId: "1:939905185755:web:f462d65e5fdf65d2d359fe",
+        };
         
-        // ပစ္စည်း သိမ်းဆည်းခြင်း (Add or Update)
-        function saveProduct() {
-            const id = document.getElementById('product-id').value || Date.now();
-            const data = {
-                id: id,
-                img: document.getElementById('p-img').value,
-                name: document.getElementById('p-name').value,
-                price: document.getElementById('p-price').value,
-                cat: document.getElementById('p-cat').value
-            };
+        let db;
+        try {
+            if (firebaseConfig.apiKey !== "YOUR_API_KEY" && !firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+                initFirebaseListeners();
+            }
+        } catch(e) { console.log("Database Offline Mode."); }
 
-            db.ref('products/' + id).set(data).then(() => {
-                alert("Saved successfully!");
-                resetForm();
-            });
+        setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('nav button').forEach(btn => btn.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60");
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            document.getElementById(`btn-${tabId}`).className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm bg-emerald-500 text-white shadow-lg";
         }
 
-        // Database ကနေ Data တွေ ဆွဲထုတ်ပြီး ပြသခြင်း
-        db.ref('products').on('value', (snapshot) => {
-            const list = document.getElementById('product-list');
-            list.innerHTML = '';
-            snapshot.forEach((child) => {
-                const p = child.val();
-                list.innerHTML += `
-                    <div class="bg-white p-4 rounded-xl shadow flex gap-4 border-l-4 border-orange-400">
-                        <img src="${p.img}" class="w-20 h-20 object-cover rounded-lg shadow-sm">
-                        <div class="flex-1">
-                            <h3 class="font-bold text-gray-800">${p.name}</h3>
-                            <p class="text-orange-500 font-bold">${p.price} Ks</p>
-                            <p class="text-xs text-gray-400 italic">${p.cat}</p>
-                            <div class="mt-2 flex gap-2">
-                                <button onclick="editProduct('${p.id}')" class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">Edit</button>
-                                <button onclick="deleteProduct('${p.id}')" class="text-xs bg-red-50 text-red-600 px-2 py-1 rounded">Delete</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-        });
-
-        function editProduct(id) {
-            db.ref('products/' + id).once('value', (s) => {
-                const p = s.val();
-                document.getElementById('product-id').value = p.id;
-                document.getElementById('p-img').value = p.img;
-                document.getElementById('p-name').value = p.name;
-                document.getElementById('p-price').value = p.price;
-                document.getElementById('p-cat').value = p.cat;
-                document.getElementById('form-title').innerText = "ပြင်ဆင်ရန်";
-                document.getElementById('btn-save').innerText = "Update လုပ်မည်";
-                document.getElementById('btn-cancel').classList.remove('hidden');
-            });
+        function setTheme(mode) {
+            const root = document.getElementById('app-root');
+            if (mode === 'dark') root.classList.add('dark'); else root.classList.remove('dark');
         }
 
-        function deleteProduct(id) {
-            if(confirm("ဖျက်မှာ သေချာပါသလား?")) {
-                db.ref('products/' + id).remove();
+        function adjustPaperWidthStyle() {
+            const size = document.getElementById('setting-printer-size').value;
+            const printArea = document.getElementById('print-area');
+            if(size === '80mm') { printArea.style.width = '80mm'; printArea.style.maxWidth = '80mm'; }
+            else { printArea.style.width = '58mm'; printArea.style.maxWidth = '58mm'; }
+        }
+
+        function triggerSystemPrinterDialog() { window.print(); }
+
+        function cancelOrder(orderKey) {
+            if(confirm("ဤအော်ဒါကို ပယ်ဖျက် (Cancel) ရန် သေချာပါသလား?")) {
+                if(db) {
+                    db.ref(`orders/${orderKey}`).update({ status: 'cancelled' }).then(() => {
+                        alert("အော်ဒါ ပယ်ဖျက်ပြီးပါပြီ။");
+                    });
+                } else { alert("Offline Preview Mode Cancelled."); }
             }
         }
 
-        function resetForm() {
-            document.getElementById('product-id').value = '';
-            document.getElementById('p-img').value = '';
-            document.getElementById('p-name').value = '';
-            document.getElementById('p-price').value = '';
-            document.getElementById('form-title').innerText = "ပစ္စည်းအသစ်ထည့်ရန်";
-            document.getElementById('btn-save').innerText = "သိမ်းဆည်းမည်";
-            document.getElementById('btn-cancel').classList.add('hidden');
-        }
-const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3');
+        // --- REAL-TIME DATA HANDLERS ---
+        let currentCheckoutTableId = ''; let activeOrdersMap = {};
 
-// အသံကို သေချာပေါက်ထွက်အောင် လုပ်တဲ့ function
-function playAlert() {
-    audio.currentTime = 0; // အသံကို အစကနေ ပြန်စစေဖို့
-    audio.play().catch(e => console.log("Audio play blocked: ", e));
-}
+        function initFirebaseListeners() {
+            // Live Orders Stream Listener
+            db.ref('orders').on('value', (snapshot) => {
+                const pipeline = document.getElementById('dashboard-orders-pipeline');
+                const tablesList = document.getElementById('dashboard-tables-list');
+                pipeline.innerHTML = ''; tablesList.innerHTML = '';
+                activeOrdersMap = {}; let tableTotals = {}; let ordersList = [];
 
-// Order နားထောင်တဲ့နေရာမှာ အောက်ကအတိုင်း ပြင်ပါ
-db.ref('orders').on('value', (snapshot) => {
-    // ... ကျန်တဲ့ code တွေ ...
-    snapshot.forEach((child) => {
-        const order = child.val();
-        if(order.status === 'pending') {
-            playAlert(); // ဒီမှာ function ကို ခေါ်လိုက်ပါ
-        }
-    });
-});
+                if(!snapshot.exists()) {
+                    pipeline.innerHTML = `<div class="text-center py-10 text-xs text-slate-400 font-mono">No live orders stream...</div>`;
+                    tablesList.innerHTML = `<div class="text-center py-10 text-xs text-slate-400 font-mono">Waiting for active tables...</div>`;
+                    return;
+                }
 
-    db.ref('orders').on('value', (snapshot) => {
-    const list = document.getElementById('order-list');
-    list.innerHTML = ''; // အရင်စာရင်းဟောင်းတွေကို ရှင်းပစ်မယ်
-    
-    snapshot.forEach((child) => {
-        const order = child.val();
-        const orderId = child.key; // အော်ဒါရဲ့ ID (ဖျက်ဖို့၊ ပရင့်ထုတ်ဖို့ သုံးမယ်)
+                snapshot.forEach(child => {
+                    const order = child.val(); order.key = child.key;
+                    ordersList.push(order);
 
-        if(order.status !== 'completed') {
-            list.innerHTML += `
-                <div class="bg-white p-4 rounded-xl shadow-md border-l-4 border-orange-500 mb-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="font-bold text-lg text-gray-800">Table: ${order.table_id}</span>
-                        <span class="text-orange-600 font-bold">${order.total}</span>
-                    </div>
-                    
-                    <div class="text-sm text-gray-600 border-t border-b border-gray-100 py-2 my-2">
-                        ${Object.values(order.items).map(item => `
-                            <div class="flex justify-between">
-                                <span>${item.name} x ${item.qty}</span>
-                                <span>${item.price * item.qty} Ks</span>
+                    if(order.status !== 'completed' && order.status !== 'cancelled') {
+                        if(!activeOrdersMap[order.table_id]) activeOrdersMap[order.table_id] = [];
+                        activeOrdersMap[order.table_id].push(order);
+
+                        let orderTotal = 0;
+                        Object.values(order.items).forEach(item => { orderTotal += (item.price * item.qty); });
+                        tableTotals[order.table_id] = (tableTotals[order.table_id] || 0) + orderTotal;
+                    }
+                });
+
+                // Display Active Tables
+                const activeTableKeys = Object.keys(tableTotals);
+                if(activeTableKeys.length === 0) {
+                    tablesList.innerHTML = `<div class="text-center py-10 text-xs text-slate-400 font-mono">Waiting for active tables...</div>`;
+                } else {
+                    activeTableKeys.forEach(tableId => {
+                        tablesList.innerHTML += `
+                            <div onclick="openCheckoutModal('${tableId}', ${tableTotals[tableId]})" class="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 rounded-xl cursor-pointer hover:border-emerald-500 transition">
+                                <span class="font-bold text-sm">${tableId.toUpperCase()}</span>
+                                <span class="font-mono font-bold text-emerald-500 text-sm">${tableTotals[tableId].toLocaleString()} Ks</span>
                             </div>
-                        `).join('')}
-                    </div>
+                        `;
+                    });
+                }
 
-                    <div class="flex gap-2">
-                        <button onclick="printReceipt('${orderId}')" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg font-bold text-sm transition active:scale-95">
-                             📄 Receipt
-                        </button>
+                // Display Active Pending Pipelines
+                let hasPending = false;
+                ordersList.reverse().forEach(order => {
+                    if(order.status === 'pending') {
+                        hasPending = true;
+                        let itemsHtml = '';
+                        Object.values(order.items).forEach(item => {
+                            itemsHtml += `<div>${item.name} <span class="font-bold font-mono text-emerald-500">x${item.qty}</span></div>`;
+                        });
+                        pipeline.innerHTML += `
+                            <div class="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl relative">
+                                <div class="flex justify-between items-center mb-2 pr-6">
+                                    <span class="text-xs font-bold px-2 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-md">${order.table_id.toUpperCase()} (Seat #${order.user_label})</span>
+                                    <span class="text-[10px] font-mono text-slate-400">${order.time || ''}</span>
+                                </div>
+                                <button onclick="cancelOrder('${order.key}')" class="absolute top-3.5 right-3.5 text-slate-400 hover:text-rose-500 transition p-1"><i class="fa-solid fa-circle-xmark text-base"></i></button>
+                                <div class="text-sm space-y-1 pl-1 border-l-2 border-slate-200 dark:border-slate-700">${itemsHtml}</div>
+                            </div>
+                        `;
+                    }
+                });
+                if(!hasPending) pipeline.innerHTML = `<div class="text-center py-10 text-xs text-slate-400 font-mono">No new live orders stream...</div>`;
+            });
 
-                        <button onclick="completeOrder('${orderId}')" class="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg font-bold text-sm transition active:scale-95">
-                             ✅ Done
-                        </button>
-                    </div>
-                </div>
-            `;
+            // Live Menu Structure Listener
+            db.ref('products').on('value', (snapshot) => {
+                localMenuTree = { dishes: {}, drinks: {}, desserts: {} };
+                if(snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        const p = child.val();
+                        if(!localMenuTree[p.main_category]) localMenuTree[p.main_category] = {};
+                        if(!localMenuTree[p.main_category][p.sub_category]) localMenuTree[p.main_category][p.sub_category] = [];
+                        localMenuTree[p.main_category][p.sub_category].push({ name: p.name, price: p.price });
+                    });
+                }
+                loadSubTitlesDropdown(); renderMenuTreeUI();
+            });
         }
-    });
-});
 
-function completeOrder(id) {
-    db.ref('orders/' + id).update({ status: 'completed' });
-}
-function completeOrder(id) {
-    if(confirm("ဒီအော်ဒါကို ပွဲသိမ်း (Done) လုပ်မှာ သေချာလား?")) {
-        db.ref('orders/' + id).update({
-            status: 'completed'
-        }).then(() => {
-            console.log("Order updated!");
-        }).catch((error) => {
-            alert("Error: " + error.message);
-        });
-    }
-}
-function showQR(id, name) {
-    // မင်းရဲ့ GitHub URL ကို အောက်မှာ အသေသတ်မှတ်ပေးလိုက်တာပါ
-    const baseUrl = "https://zinminbobo23-star.github.io/rangoonkitchen/table.html";
-    const tableUrl = `${baseUrl}?id=${id}&name=${encodeURIComponent(name)}`;
-    
-    document.getElementById('qr-modal').classList.remove('hidden');
-    document.getElementById('qr-title').innerText = name + " အတွက် QR Code";
-    document.getElementById('qrcode').innerHTML = '';
-    
-    new QRCode(document.getElementById("qrcode"), {
-        text: tableUrl,
-        width: 200,
-        height: 200
-    });
-}
-// အော်ဒါစာရင်း ပြောင်းလဲတိုင်း ပိုက်ဆံကို အသစ်ပြန်တွက်မယ်
-db.ref('orders').on('value', (snapshot) => {
-    let totalIncome = 0;
+        function openCheckoutModal(tableId, totalAmount) {
+            currentCheckoutTableId = tableId;
+            document.getElementById('modal-table-title').innerText = `TABLE: ${tableId.toUpperCase()}`;
+            document.getElementById('modal-total-amount').innerText = `${totalAmount.toLocaleString()} Ks`;
+            document.getElementById('bill-time').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            const listContainer = document.getElementById('modal-items-list');
+            listContainer.innerHTML = '';
 
-    snapshot.forEach((child) => {
-        const order = child.val();
-        
-        // အော်ဒါက "Done" (completed) ဖြစ်နေမှ ပိုက်ဆံပေါင်းမယ်
-        if (order.status === 'completed') {
-            // "500 Ks" ဆိုတဲ့ စာသားထဲကနေ နံပါတ် 500 ကိုပဲ ဆွဲထုတ်တာပါ
-            let amount = parseInt(order.total.replace(/[^0-9]/g, ''));
-            totalIncome += amount;
+            if(activeOrdersMap[tableId]) {
+                activeOrdersMap[tableId].forEach(order => {
+                    Object.values(order.items).forEach(item => {
+                        listContainer.innerHTML += `<div class="flex justify-between py-0.5"><span>${item.name} x${item.qty}</span><span>${(item.price * item.qty).toLocaleString()} Ks</span></div>`;
+                    });
+                });
+            }
+            adjustPaperWidthStyle();
+            document.getElementById('checkout-modal').classList.remove('hidden');
         }
-    });
 
-    // တွက်လို့ရတဲ့ စုစုပေါင်းကို Screen ပေါ်မှာ ပြလိုက်မယ်
-    document.getElementById('daily-total-display').innerText = totalIncome + " Ks";
-});
-function printReceipt(orderId) {
-    db.ref('orders/' + orderId).once('value', (snapshot) => {
-        const order = snapshot.val();
-        if(!order) return;
+        function closeCheckoutModal() { document.getElementById('checkout-modal').classList.add('hidden'); }
 
-        let itemsHtml = `
-            <p><b>Table Number:</b> ${order.table_name || order.table_id}</p>
-            <p><b>အချိန်:</b> ${order.time}</p>
-            <hr style="border-top: 1px dashed #000;">
-            <table style="width: 100%;">
-        `;
+        function triggerPrintSlip() {
+            window.print();
+            if(db && activeOrdersMap[currentCheckoutTableId]) {
+                let updates = {};
+                activeOrdersMap[currentCheckoutTableId].forEach(order => { updates[`/orders/${order.key}/status`] = 'completed'; });
+                db.ref().update(updates).then(() => { closeCheckoutModal(); });
+            } else { closeCheckoutModal(); }
+        }
 
-        Object.values(order.items).forEach(item => {
-            itemsHtml += `
-                <tr>
-                    <td>${item.name} x ${item.qty}</td>
-                    <td style="text-align: right;">${item.price * item.qty} Ks</td>
-                </tr>
-            `;
-        });
-
-        itemsHtml += `
-            </table>
-            <hr style="border-top: 1px dashed #000;">
-            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px;">
-                <span>စုစုပေါင်း:</span>
-                <span>${order.total}</span>
-            </div>
-        `;
-
-        document.getElementById('receipt-details').innerHTML = itemsHtml;
-        window.print(); // Browser ရဲ့ Print window ကို ခေါ်လိုက်တာပါ
-    });
-}
+        // --- LOCAL CONFIGS & INTERFACE TREE ---
+        let localMenuTree = { dishes: {}, drinks: {}, desserts: {} };
+        function addNewSubTitle() {
+            const mainCat = document.getElementById('menu-main-cat').value;
+            const titleName = document.getElementById('new-sub-title').value.trim();
+            if(!titleName) return alert("Cuisine name required!");
+            if(!localMenuTree[mainCat][titleName]) localMenuTree[mainCat][titleName] = [];
+            if(db) db.ref(`menu_structure/${mainCat}/${titleName}`).set(true);
+            loadSubTitlesDropdown(); renderMenuTreeUI();
+            document.getElementById('new-sub-title').value = '';
+        }
+        function loadSubTitlesDropdown() {
+            const mainCat = document.getElementById('menu-main-cat').value;
+            const select = document.getElementById('menu-sub-title-select'); select.innerHTML = '';
+            Object.keys(localMenuTree[mainCat]).forEach(sub => { select.innerHTML += `<option value="${sub}">${sub}</option>`; });
+        }
+        function saveNewItem() {
+            const mainCat = document.getElementById('menu-main-cat').value; const subTitle = document.getElementById('menu-sub-title-select').value;
+            const name = document.getElementById('new-item-name').value.trim(); const price = parseFloat(document.getElementById('new-item-price').value);
+            if(!subTitle || !name || !price) return alert("Fill all fields!");
+            if(db) db.ref(`products`).push().set({ main_category: mainCat, sub_category: subTitle, name: name, price: price });
+            document.getElementById('new-item-name').value = ''; document.getElementById('new-item-price').value = '';
+        }
+        function renderMenuTreeUI() {
+            const container = document.getElementById('live-menu-tree'); container.innerHTML = '';
+            let totalItems = 0;
+            ['dishes', 'drinks', 'desserts'].forEach(cat => {
+                let catHtml = `<div class="pb-2 border-b border-slate-800/40 mt-2"><h3 class="text-xs font-bold text-emerald-500 uppercase tracking-wide mb-1">${cat}</h3>`;
+                Object.keys(localMenuTree[cat]).forEach(sub => {
+                    catHtml += `<div class="pl-2 mt-2"><h4 class="text-xs text-slate-400 font-bold mb-1">─ ${sub}</h4><div class="grid grid-cols-2 gap-2 pl-2">`;
+                    localMenuTree[cat][sub].forEach(item => {
+                        totalItems++;
+                        catHtml += `<div class="p-2 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-xl text-xs flex justify-between"><span>${item.name}</span><span class="text-emerald-500 font-mono">${item.price.toLocaleString()} Ks</span></div>`;
+                    });
+                    catHtml += `</div></div>`;
+                });
+                container.innerHTML += catHtml + `</div>`;
+            });
+            if(totalItems === 0) container.innerHTML = `<div class="text-center py-10 text-xs text-slate-400 font-mono">No menus loaded...</div>`;
+        }
     </script>
-    <div id="receipt-print-area" class="hidden">
-    <div style="width: 80mm; padding: 10px; font-family: sans-serif; font-size: 12px; line-height: 1.5;">
-        <div style="text-align: center;">
-            <h2 style="margin: 0;">Rangoon Kitchen</h2>
-            <p style="margin: 5px 0;">ကျေးဇူးတင်ပါသည်</p>
-            <hr style="border-top: 1px dashed #000;">
-        </div>
-        <div id="receipt-details">
-            </div>
-        <hr style="border-top: 1px dashed #000;">
-        <div style="text-align: center; margin-top: 10px;">
-            <p>Rangoon Kitchen</p>
-        </div>
-    </div>
-</div>
-
-<style>
-    /* Print ထုတ်တဲ့အခါမှပဲ ဒါကိုပြမယ် */
-    @media print {
-        body * { visibility: hidden; }
-        #receipt-print-area, #receipt-print-area * { visibility: visible; }
-        #receipt-print-area { position: absolute; left: 0; top: 0; width: 80mm; }
-    }
-</style>
 </body>
 </html>
