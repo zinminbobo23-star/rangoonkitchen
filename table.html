@@ -21,6 +21,21 @@
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col overflow-hidden transition-colors duration-200">
 
+    <div id="seat-select-screen" class="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center p-6 text-center z-50">
+        <div class="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center text-2xl mb-2">
+            <i class="fa-solid fa-chair"></i>
+        </div>
+        <h2 id="seat-screen-table-title" class="text-xl font-black text-white uppercase tracking-wide">TABLE: --</h2>
+        <p class="text-xs text-slate-400 mt-1 mb-6">ကျေးဇူးပြု၍ သင်ထိုင်နေသော ထိုင်ခုံနံပါတ်ကို ရွေးချယ်ပေးပါဗျာ။</p>
+        
+        <div class="grid grid-cols-2 gap-4 max-w-xs w-full mb-4">
+            <button onclick="selectSeat('1')" class="p-4 bg-slate-900 border border-slate-800 rounded-2xl hover:border-emerald-500 font-bold text-sm transition">Seat #1</button>
+            <button onclick="selectSeat('2')" class="p-4 bg-slate-900 border border-slate-800 rounded-2xl hover:border-emerald-500 font-bold text-sm transition">Seat #2</button>
+            <button onclick="selectSeat('3')" class="p-4 bg-slate-900 border border-slate-800 rounded-2xl hover:border-emerald-500 font-bold text-sm transition">Seat #3</button>
+            <button onclick="selectSeat('4')" class="p-4 bg-slate-900 border border-slate-800 rounded-2xl hover:border-emerald-500 font-bold text-sm transition">Seat #4</button>
+        </div>
+    </div>
+
     <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 relative z-40">
         <button onclick="toggleSidebar()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
             <i class="fa-solid fa-ellipsis-vertical text-lg text-emerald-500"></i>
@@ -53,13 +68,10 @@
                     <i class="fa-solid fa-users"></i> Your Table Orders
                 </button>
             </nav>
-            <div class="p-4 border-t border-slate-200 dark:border-slate-800 text-center text-[10px] font-mono text-slate-400">
-                Powered by Rangoon Kitchen
-            </div>
+            <div class="p-4 border-t border-slate-200 dark:border-slate-800 text-center text-[10px] font-mono text-slate-400">Powered by Rangoon Kitchen</div>
         </aside>
 
         <div class="flex-grow overflow-y-auto p-4 custom-scroll pb-24">
-            
             <main id="tab-menu-items" class="tab-panel space-y-6">
                 <div id="menu-items-container" class="space-y-6"></div>
             </main>
@@ -81,14 +93,9 @@
     </div>
 
     <div id="session-lock-screen" class="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center p-6 text-center z-50 hidden">
-        <div class="w-20 h-20 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center text-3xl mb-4 animate-bounce">
-            <i class="fa-solid fa-qrcode"></i>
-        </div>
+        <div class="w-20 h-20 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center text-3xl mb-4 animate-bounce"><i class="fa-solid fa-qrcode"></i></div>
         <h2 class="text-xl font-black text-white tracking-wide">ဤဝိုင်းအတွက် ငွေရှင်းပြီးပါပြီ</h2>
         <p class="text-sm text-slate-400 mt-2 max-w-xs">ထပ်မံမှာယူလိုပါက ကျေးဇူးပြု၍ စားပွဲပေါ်ရှိ QR Code ကို နောက်တစ်ကြိမ် ထပ်မံ Scan ဖတ်ပေးပါဗျာ။</p>
-        <div class="mt-6 text-xs font-mono text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
-            THANK YOU FOR DINING WITH US!
-        </div>
     </div>
 
     <div id="cart-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-end justify-center hidden">
@@ -102,50 +109,48 @@
                 <span class="text-xs font-bold text-slate-400">Total</span>
                 <span id="cart-total-amount" class="text-base font-black text-emerald-500">0 Ks</span>
             </div>
-            <button onclick="submitOrderToFirebase()" class="w-full bg-emerald-500 text-slate-950 font-black py-4 rounded-xl text-xs mt-4 tracking-wider shadow-lg shadow-emerald-500/20">
-                CONFIRM & SEND TO KITCHEN
-            </button>
+            <button onclick="submitOrderToFirebase()" class="w-full bg-emerald-500 text-slate-950 font-black py-4 rounded-xl text-xs mt-4 tracking-wider shadow-lg shadow-emerald-500/20">CONFIRM & SEND TO KITCHEN</button>
         </div>
     </div>
 
     <script>
-        // --- URL Parameter ကနေ Table ID ဖတ်ခြင်း (ဥပမာ- table.html?table=table01&seat=2) ---
         const urlParams = new URLSearchParams(window.location.search);
         const currentTable = urlParams.get('table') || 'table 01'; 
-        const currentUserSeat = urlParams.get('seat') || '1'; 
+        let currentUserSeat = ''; // လူကိုယ်တိုင် ရွေးချယ်မှုအပေါ် မူတည်ပြီး ဒေတာသွင်းမည်
 
-        document.getElementById('current-table-display').innerText = `Table: ${currentTable.toUpperCase()} (Seat #${currentUserSeat})`;
+        document.getElementById('seat-screen-table-title').innerText = `TABLE: ${currentTable.toUpperCase()}`;
 
-        // --- Firebase Config ---
         const firebaseConfig = { apiKey: "AIzaSyC6aJ6JwNrjEKbnmcPKkqpjm0c6ok6cHas",
-                authDomain: "rangoon-kitchen.firebaseapp.com",
-                databaseURL: "https://rangoon-kitchen-default-rtdb.firebaseio.com",
-                projectId: "rangoon-kitchen",
-                storageBucket: "rangoon-kitchen.firebasestorage.app",
-                messagingSenderId: "939905185755",
-                appId: "1:939905185755:web:f462d65e5fdf65d2d359fe" };
-        
+  authDomain: "rangoon-kitchen.firebaseapp.com",
+  databaseURL: "https://rangoon-kitchen-default-rtdb.firebaseio.com",
+  projectId: "rangoon-kitchen",
+  storageBucket: "rangoon-kitchen.firebasestorage.app",
+  messagingSenderId: "939905185755",
+  appId: "1:939905185755:web:f462d65e5fdf65d2d359fe" };
         let db;
         try { if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); db = firebase.database(); initTableAppEngine(); } } catch(e) { }
 
-        // --- UI Interactions ---
+        // 🛠️ ထိုင်ခုံရွေးချယ်မှုကို ထိန်းချုပ်သည့် Function
+        function selectSeat(seatNo) {
+            currentUserSeat = seatNo;
+            document.getElementById('current-table-display').innerText = `Table: ${currentTable.toUpperCase()} (Seat #${currentUserSeat})`;
+            document.getElementById('seat-select-screen').classList.add('hidden'); // ရွေးပြီးရင် ရွေးခိုင်းတဲ့ screen ပိတ်မယ်
+            if (db) initLiveOrderRealtimeSync(); 
+        }
+
         function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar-nav');
-            const overlay = document.getElementById('sidebar-overlay');
-            sidebar.classList.toggle('-translate-x-full');
-            overlay.classList.toggle('hidden');
+            document.getElementById('sidebar-nav').classList.toggle('-translate-x-full');
+            document.getElementById('sidebar-overlay').classList.toggle('hidden');
         }
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-panel').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('aside nav button').forEach(btn => btn.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60");
-            
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
             document.getElementById(`btn-${tabId}`).className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm bg-emerald-500 text-white shadow-md";
             toggleSidebar();
         }
 
-        // --- Shopping Basket Local State ---
         let cart = {};
         function toggleCartModal() { document.getElementById('cart-modal').classList.toggle('hidden'); updateCartUI(); }
 
@@ -188,23 +193,15 @@
             document.getElementById('cart-total-amount').innerText = `${total.toLocaleString()} Ks`;
         }
 
-        // --- Core Firebase Synchronizations ---
-        let productsDatabaseCache = {};
-        
         function initTableAppEngine() {
             if(!db) return;
-
-            // 1. Listen for Live Menus
             db.ref('products').on('value', (snapshot) => {
                 const container = document.getElementById('menu-items-container'); container.innerHTML = '';
                 let structured = {};
-                productsDatabaseCache = {};
-
                 if(!snapshot.exists()) { container.innerHTML = `<div class="text-center py-10 text-slate-400 text-xs">No food menu available yet.</div>`; return; }
 
                 snapshot.forEach(child => {
                     const p = child.val(); p.key = child.key;
-                    productsDatabaseCache[p.key] = p;
                     if(!structured[p.sub_category]) structured[p.sub_category] = [];
                     structured[p.sub_category].push(p);
                 });
@@ -215,15 +212,17 @@
                         sectionHtml += `
                             <div class="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl flex justify-between items-center shadow-sm">
                                 <div><h4 class="text-sm font-bold">${p.name}</h4><p class="font-mono text-xs text-emerald-500 font-bold mt-0.5">${p.price.toLocaleString()} Ks</p></div>
-                                <button onclick="addToCart('${p.key}', '${p.name}', ${p.price})" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1">Add +</button>
+                                <button onclick="addToCart('${p.key}', '${p.name}', ${p.price})" class="bg-emerald-500 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-xs">Add +</button>
                             </div>
                         `;
                     });
                     container.innerHTML += sectionHtml + `</div></div>`;
                 });
             });
+        }
 
-            // 2. 🔒 Session Monitor: ဝိုင်းတစ်ခုလုံးရဲ့ အော်ဒါအခြေအနေကို စောင့်ကြည့်ပြီး Lock စနစ်ကို ထိန်းချုပ်မယ်
+        // 🛠️ Seat ရွေးချယ်ပြီးမှ Realtime Synchronize လုပ်ပေးမည့် အပိုင်း
+        function initLiveOrderRealtimeSync() {
             db.ref('orders').on('value', (snapshot) => {
                 const myOrdersList = document.getElementById('my-orders-list');
                 const tableOrdersList = document.getElementById('table-orders-list');
@@ -236,17 +235,10 @@
                 if(snapshot.exists()) {
                     snapshot.forEach(child => {
                         const order = child.val(); order.key = child.key;
-
-                        // ဤဝိုင်းနှင့်သက်ဆိုင်သော ဒေတာများကို စစ်ထုတ်ခြင်း
                         if(order.table_id.toLowerCase() === currentTable.toLowerCase()) {
                             activeOrdersInTableCount++;
+                            if(order.status === 'completed') completedOrdersInTableCount++;
 
-                            // Cashier က ဝိုင်းပိတ်သိမ်းပြီးပြီလား စစ်ဆေးခြင်း
-                            if(order.status === 'completed') {
-                                completedOrdersInTableCount++;
-                            }
-
-                            // ပယ်ဖျက်မထားသော အော်ဒါများကို စာရင်းတွက်ချက်ပြသမယ်
                             if(order.status !== 'cancelled') {
                                 let itemsText = Object.values(order.items).map(i => `${i.name} x${i.qty}`).join(', ');
                                 let orderCost = Object.values(order.items).reduce((sum, i) => sum + (i.price * i.qty), 0);
@@ -255,7 +247,6 @@
                                 let badgeColor = order.status === 'pending' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500';
                                 let statusHtml = `<span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded ${badgeColor}">${order.status}</span>`;
 
-                                // တကယ့် Table အော်ဒါစာရင်းထုတ်ပြခြင်း UI
                                 tableOrdersList.innerHTML += `
                                     <div class="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex justify-between items-center text-xs">
                                         <div><div class="font-bold">Seat #${order.user_label} <span class="font-normal text-slate-400 font-mono">(${order.time})</span></div><div class="text-slate-400 mt-0.5">${itemsText}</div></div>
@@ -263,7 +254,6 @@
                                     </div>
                                 `;
 
-                                // မင်းကိုယ်ပိုင်ဖုန်းက မှာထားတဲ့ အော်ဒါစာရင်း သီးသန့် UI
                                 if(order.user_label === currentUserSeat) {
                                     myOrdersList.innerHTML += `
                                         <div class="p-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex justify-between items-center text-xs">
@@ -281,7 +271,6 @@
                 if(myOrdersList.innerHTML === '') myOrdersList.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs">You haven't ordered anything yet.</div>`;
                 if(tableOrdersList.innerHTML === '') tableOrdersList.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs">No active table orders.</div>`;
 
-                // 💡 CRITICAL LOGIC: အော်ဒါတွေရှိနေပြီး အားလုံးက 'completed' ဖြစ်သွားရင် ဝိုင်းပိတ်ပြီဟု သတ်မှတ်ပြီး App ကို Lock ချလိုက်မယ်။
                 if(activeOrdersInTableCount > 0 && activeOrdersInTableCount === completedOrdersInTableCount) {
                     document.getElementById('session-lock-screen').classList.remove('hidden');
                 } else {
@@ -290,30 +279,16 @@
             });
         }
 
-        // --- အော်ဒါကို Kitchen (Firebase) သို့ လှမ်းပို့ခြင်း ---
         function submitOrderToFirebase() {
             if(Object.keys(cart).length === 0) return alert("ခြင်းတောင်းထဲမှာ အစားအသောက်မရှိပါ!");
-            
             if(db) {
                 const timeString = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                const orderData = {
-                    table_id: currentTable,
-                    user_label: currentUserSeat,
-                    time: timeString,
-                    status: "pending",
-                    items: cart
-                };
-                
+                const orderData = { table_id: currentTable, user_label: currentUserSeat, time: timeString, status: "pending", items: cart };
                 db.ref('orders').push().set(orderData).then(() => {
-                    cart = {};
-                    updateCartBadge();
-                    toggleCartModal();
+                    cart = {}; updateCartBadge(); toggleCartModal();
                     alert("အော်ဒါကို မီးဖိုချောင်သို့ ပို့လိုက်ပါပြီဗျာ!");
                     switchTab('your-orders');
                 });
-            } else {
-                alert("Demo Mode: Order success simulation!");
-                cart = {}; updateCartBadge(); toggleCartModal();
             }
         }
     </script>
