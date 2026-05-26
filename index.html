@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rangoon Kitchen - Cashier POS System</title>
+    <title>Rangoon Kitchen - Cashier POS Dashboard</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -18,19 +18,10 @@
         .custom-scroll::-webkit-scrollbar { width: 5px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
         
-        /* 🖨️ PRINT MEDIA STYLES */
         @media print {
             aside, header, button, .no-print, form, .input-box-area { display: none !important; }
             body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
-            
-            /* စာရွက်အကျယ်ကို အောက်က Dynamic CSS (JS) ကနေ လာထိန်းပေးမှာဖြစ်ပါတယ် */
-            .print-area { 
-                display: block !important; 
-                margin: 0 auto !important; 
-                padding: 4px !important; 
-                background: white !important;
-                color: black !important;
-            }
+            .print-area { display: block !important; margin: 0 auto !important; padding: 4px !important; background: white !important; color: black !important; }
             .tab-panel { display: block !important; }
         }
     </style>
@@ -74,10 +65,12 @@
             
             <main id="panel-dashboard" class="tab-panel space-y-6">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">ဝင်လာသော အော်ဒါများစာရင်း</h3>
+                    <h3 class="text-xs font-bold text-slate-400 tracking-wider">ဝင်လာသော အော်ဒါများစာရင်း</h3>
                     <span id="order-badge-count" class="bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 text-xs font-bold font-mono px-2.5 py-0.5 rounded-full">Active: 0</span>
                 </div>
-                <div id="dashboard-orders-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                <div id="dashboard-orders-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="col-span-full text-center py-12 text-slate-400 text-xs font-mono">Firebase Config ကို ဖြည့်သွင်းရန် စောင့်ဆိုင်းနေပါသည်...</div>
+                </div>
             </main>
 
             <main id="panel-add-menu" class="tab-panel hidden space-y-6">
@@ -99,18 +92,26 @@
                             <input type="text" id="new-p-subcat" placeholder="Noodles" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500">
                         </div>
                     </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">ဟင်းပွဲပုံ တင်ရန် (Upload Menu Image)</label>
+                        <div class="flex items-center gap-3">
+                            <input type="file" id="new-p-image-file" accept="image/*" onchange="previewAndConvertImage(this)" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-emerald-500/10 file:text-emerald-500 hover:file:bg-emerald-500/20 cursor-pointer bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-1">
+                            <img id="img-upload-preview" src="" class="w-11 h-11 object-cover rounded-xl border border-slate-200 dark:border-slate-800 hidden bg-slate-950">
+                        </div>
+                    </div>
+
                     <div class="flex gap-2">
                         <button onclick="saveProductToFirebase()" id="btn-submit-product" class="flex-grow bg-emerald-500 text-slate-950 font-black py-3 rounded-xl text-xs tracking-wider shadow-lg">SAVE TO STREAM</button>
-                        <button onclick="clearProductForm()" id="btn-cancel-edit" class="bg-slate-200 dark:bg-slate-800 font-bold px-4 rounded-xl text-xs hidden">Cancel</button>
                     </div>
                 </div>
 
                 <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 overflow-x-auto">
-                    <h4 class="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">လက်ရှိ ရောင်းချနေသော ဟင်းပွဲများ စာရင်း</h4>
                     <table class="w-full text-left text-xs font-mono">
                         <thead>
                             <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase">
-                                <th class="py-2">Item Name</th>
+                                <th class="py-2 pl-2">Pic</th>
+                                <th>Item Name</th>
                                 <th>Category</th>
                                 <th>Price</th>
                                 <th class="text-right">Actions</th>
@@ -129,73 +130,40 @@
                         <button onclick="archiveAndResetDailySettlement()" class="bg-rose-500 text-white font-black px-4 py-2 rounded-xl text-xs flex items-center gap-2"><i class="fa-solid fa-calendar-day"></i> CLOSE DAY & RESET</button>
                     </div>
                 </div>
-
-                <div class="hidden print:block text-center text-black font-mono border-b border-dashed border-black pb-2 mb-4">
-                    <h2 id="print-shop-name" class="text-base font-black uppercase">Rangoon Kitchen</h2>
-                    <p id="print-shop-details" class="text-[10px] whitespace-pre-line mt-0.5">Delivery Service</p>
-                    <p id="print-date-time" class="text-[9px] mt-1 text-slate-600"></p>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 print:border-black rounded-2xl">
-                        <div class="text-[10px] font-bold text-slate-400 uppercase">Today Total Sales</div>
-                        <div id="settle-total-sales" class="text-xl font-black text-emerald-500 print:text-black mt-1">0 Baht</div>
-                    </div>
-                    <div class="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 print:border-black rounded-2xl">
-                        <div class="text-[10px] font-bold text-slate-400 uppercase">Closed Table Bills</div>
-                        <div id="settle-count-completed" class="text-xl font-black text-sky-500 print:text-black mt-1">0 Bills</div>
-                    </div>
-                </div>
-
-                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 print:border-none rounded-2xl p-4 overflow-x-auto">
-                    <table class="w-full text-left text-xs font-mono print:text-black">
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 overflow-x-auto">
+                    <table class="w-full text-left text-xs font-mono">
                         <thead>
-                            <tr class="border-b border-slate-200 dark:border-slate-800 print:border-black text-slate-400 print:text-black uppercase">
+                            <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase">
                                 <th class="py-2">Time</th>
                                 <th>Source</th>
                                 <th>Items</th>
                                 <th class="text-right">Total</th>
                             </tr>
                         </thead>
-                        <tbody id="settlement-rows-container" class="divide-y divide-slate-100 dark:divide-slate-800/40 print:divide-black"></tbody>
+                        <tbody id="settlement-rows-container"></tbody>
                     </table>
                 </div>
             </main>
 
             <main id="panel-settings" class="tab-panel hidden max-w-xl space-y-6">
-                
-                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl space-y-3">
-                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider">🌓 Interface Theme Configuration</h3>
-                    <div class="flex justify-between items-center text-xs">
-                        <span>စနစ်တစ်ခုလုံး၏ အလင်းအမှောင် နောက်ခံဒီဇိုင်းကို ပြောင်းလဲရန်-</span>
-                        <button onclick="toggleInterfaceTheme()" id="btn-theme-toggle" class="bg-slate-200 dark:bg-slate-800 hover:bg-emerald-500 dark:hover:bg-emerald-500 hover:text-slate-950 font-bold px-4 py-2 rounded-xl transition">
-                            <i class="fa-solid fa-moon"></i> Switch Theme
-                        </button>
-                    </div>
-                </div>
-
                 <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl space-y-4">
-                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider">🖨️ Printer Device & Layout Configuration</h3>
-                    
+                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider">🖨️ Configuration</h3>
                     <div>
-                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Select Printer Type (ပရင်တာအမျိုးအစား ရွေးရန်)</label>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Select Printer Type</label>
                         <select id="cfg-printer-type" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500">
-                            <option value="80mm">80mm Thermal POS Printer (Xprinter / Epson - စာသားအပြည့်အစုံဆံ့သည်)</option>
-                            <option value="58mm">58mm Mini Portable Bluetooth Printer (စာရွက်အသေးစား)</option>
+                            <option value="80mm">80mm Thermal POS Printer</option>
+                            <option value="58mm">58mm Mini Portable Printer</option>
                         </select>
                     </div>
-
-                    <hr class="border-slate-100 dark:border-slate-800/60 my-1">
-
                     <div>
-                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">ဆိုင်အမည် (Shop Header Name)</label>
+                        <label class="text-[10px] font-bold text-amber-500 uppercase block mb-1">Telegram Bot Token (ဝယ်သူဆီ Record ပို့ရန်)</label>
+                        <input type="text" id="cfg-bot-token" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500 font-mono">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Shop Header Name</label>
                         <input type="text" id="cfg-shop-name" value="Rangoon Kitchen" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500">
                     </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">လိပ်စာနှင့် ဖုန်းနံပါတ် (Receipt Sub-details)</label>
-                        <textarea id="cfg-shop-details" rows="3" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500">Phuket, Patong Delivery&#10;Phone: 095-xxx-xxxx</textarea>
-                    </div>
-                    <button onclick="savePrinterSettings()" class="w-full bg-emerald-500 text-slate-950 font-black py-3 rounded-xl text-xs tracking-wider transition">SAVE PRINTER CONFIGURATION</button>
+                    <button onclick="savePrinterSettings()" class="w-full bg-emerald-500 text-slate-950 font-black py-3 rounded-xl text-xs tracking-wider transition">SAVE CONFIGURATION</button>
                 </div>
             </main>
 
@@ -210,18 +178,53 @@
         let currentDayTotalSales = 0;
         let currentDayClosedBills = 0;
         let rawOrdersSnapshotData = {};
+        let db = null;
+        let base64ImageString = ""; // 📸 Upload လုပ်ထားတဲ့ ပုံစာသားကုဒ် သိမ်းရန် Variable
 
-        // ⚠️ FIREBASE CONFIG
-        const firebaseConfig = { apiKey: "AIzaSyC6aJ6JwNrjEKbnmcPKkqpjm0c6ok6cHas",
+        // ⚠️ မင်းရဲ့ တကယ့် FIREBASE CONFIG ဒေတာတွေကို ဒီအောက်မှာ ထည့်ပါ ⚠️
+        const firebaseConfig = {
+            apiKey: "AIzaSyC6aJ6JwNrjEKbnmcPKkqpjm0c6ok6cHas",
   authDomain: "rangoon-kitchen.firebaseapp.com",
   databaseURL: "https://rangoon-kitchen-default-rtdb.firebaseio.com",
   projectId: "rangoon-kitchen",
   storageBucket: "rangoon-kitchen.firebasestorage.app",
   messagingSenderId: "939905185755",
-  appId: "1:939905185755:web:f462d65e5fdf65d2d359fe" };
+  appId: "1:939905185755:web:f462d65e5fdf65d2d359fe"
+        };
         
-        let db;
-        try { if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); db = firebase.database(); initPOSMainEngine(); initProductsRealtimeLoader(); loadLocalConfigs(); } } catch(e) { console.error(e); }
+        window.onload = function() {
+            loadLocalConfigs();
+            if (firebaseConfig.databaseURL && !firebaseConfig.databaseURL.includes("YOUR_")) {
+                try {
+                    if (!firebase.apps.length) { 
+                        firebase.initializeApp(firebaseConfig); 
+                        db = firebase.database(); 
+                        initPOSMainEngine(); 
+                        initProductsRealtimeLoader(); 
+                    }
+                } catch(e) { console.error("Firebase Init Error:", e); }
+            }
+        };
+
+        // 📸 ပုံရွေးလိုက်တာနဲ့ Base64 ကုဒ်အဖြစ် အလိုအလျောက်ပြောင်းပေးပြီး Preview ပြသည့် Function
+        function previewAndConvertImage(input) {
+            const file = input.files[0];
+            if (file) {
+                // Database ထဲ ဒေတာအရမ်းမကြီးအောင် ပုံ Size ကြီးရင် Alert ပေးခြင်း
+                if (file.size > 1024 * 1024) { 
+                    alert("ပုံ Size က အရမ်းကြီးနေပါတယ်ဗျာ။ 1MB အောက် ပုံလေးတွေပဲ ရွေးပေးပါဦး။");
+                    input.value = ""; return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    base64ImageString = e.target.result;
+                    const previewImg = document.getElementById('img-upload-preview');
+                    previewImg.src = base64ImageString;
+                    previewImg.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-panel').forEach(el => el.classList.add('hidden'));
@@ -233,229 +236,135 @@
             document.getElementById('current-panel-title').innerText = `${tabId.replace('-', ' ')} Panel`;
         }
 
-        function toggleInterfaceTheme() {
-            const root = document.getElementById('app-root');
-            if(root.classList.contains('dark')) {
-                root.classList.remove('dark'); localStorage.setItem('pos-theme', 'light');
-            } else {
-                root.classList.add('dark'); localStorage.setItem('pos-theme', 'dark');
-            }
-        }
-
-        // 💾 Printer Settings သိမ်းဆည်းခြင်း
         function savePrinterSettings() {
-            const printerType = document.getElementById('cfg-printer-type').value;
-            const name = document.getElementById('cfg-shop-name').value.trim();
-            const details = document.getElementById('cfg-shop-details').value.trim();
-            
-            localStorage.setItem('cfg-printer-type', printerType);
-            localStorage.setItem('cfg-print-name', name);
-            localStorage.setItem('cfg-print-details', details);
-            
-            loadLocalConfigs();
-            alert("ပရင်တာ ရွေးချယ်မှုနှင့် စာသားပြင်ဆင်ချက်များကို အောင်မြင်စွာ သိမ်းဆည်းလိုက်ပါပြီဗျာ။");
+            localStorage.setItem('cfg-printer-type', document.getElementById('cfg-printer-type').value);
+            localStorage.setItem('cfg-bot-token', document.getElementById('cfg-bot-token').value.trim());
+            localStorage.setItem('cfg-print-name', document.getElementById('cfg-shop-name').value.trim());
+            loadLocalConfigs(); alert("Configuration Saved!");
         }
 
-        // ⚙️ ရွေးချယ်ထားသော Printer Layout အတိုင်း စနစ်ထဲတွင် Dynamic ချိန်ညှိပေးခြင်း
         function loadLocalConfigs() {
-            const savedTheme = localStorage.getItem('pos-theme') || 'dark';
-            const root = document.getElementById('app-root');
-            if(savedTheme === 'dark') root.classList.add('dark'); else root.classList.remove('dark');
-
             const printerType = localStorage.getItem('cfg-printer-type') || '80mm';
-            const pName = localStorage.getItem('cfg-print-name') || "Rangoon Kitchen";
-            const pDetails = localStorage.getItem('cfg-print-details') || "Delivery Service";
-            
             document.getElementById('cfg-printer-type').value = printerType;
-            document.getElementById('cfg-shop-name').value = pName;
-            document.getElementById('cfg-shop-details').value = pDetails;
-            document.getElementById('print-shop-name').innerText = pName;
-            document.getElementById('print-shop-details').innerText = pDetails;
-
-            // 📏 Printer Type ပေါ်မူတည်ပြီး စာရွက်အနားသတ်အကျယ်ကို Automatic တွက်ချက်ပေးမည်
-            let widthValue = "420px"; 
-            if(printerType === '58mm') widthValue = "280px";
-
-            document.getElementById('dynamic-print-style').innerHTML = `
-                @media print {
-                    .print-area { width: ${widthValue} !important; max-width: ${widthValue} !important; }
-                }
-            `;
+            document.getElementById('cfg-bot-token').value = localStorage.getItem('cfg-bot-token') || '';
+            document.getElementById('cfg-shop-name').value = localStorage.getItem('cfg-print-name') || "Rangoon Kitchen";
+            let widthValue = printerType === '58mm' ? "280px" : "420px";
+            document.getElementById('dynamic-print-style').innerHTML = `@media print { .print-area { width: ${widthValue} !important; max-width: ${widthValue} !important; } }`;
         }
 
-        // 📋 Menu Management Logics
-        function initProductsRealtimeLoader() {
-            if(!db) return;
-            db.ref('products').on('value', (snapshot) => {
-                const tbody = document.getElementById('products-table-rows'); tbody.innerHTML = '';
-                if(!snapshot.exists()) { tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-slate-400">ဟင်းပွဲစာရင်း မရှိသေးပါဗျာ။</td></tr>`; return; }
-                
-                snapshot.forEach(child => {
-                    const p = child.val();
-                    tbody.innerHTML += `
-                        <tr class="border-b border-slate-100 dark:border-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800/30">
-                            <td class="py-3 font-bold">${p.name}</td>
-                            <td class="text-slate-400">${p.sub_category}</td>
-                            <td class="text-emerald-500 font-bold">${p.price.toLocaleString()} Baht</td>
-                            <td class="text-right space-x-1">
-                                <button onclick="fillProductToEdit('${child.key}', '${p.name}', ${p.price}, '${p.sub_category}')" class="bg-sky-500/10 hover:bg-sky-500 text-sky-500 hover:text-slate-950 px-2 py-1 rounded-lg text-[11px] font-bold transition">✏️ Edit</button>
-                                <button onclick="deleteProductSession('${child.key}')" class="bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white px-2 py-1 rounded-lg text-[11px] font-bold transition">🗑️ Delete</button>
-                            </td>
-                        </tr>`;
-                });
+        function triggerTelegramRecordOnly(orderKey) {
+            if(!rawOrdersSnapshotData[orderKey]) return;
+            const orderData = rawOrdersSnapshotData[orderKey];
+            const botToken = localStorage.getItem('cfg-bot-token');
+            const chatId = orderData.customer_chat_id; 
+
+            if (!botToken) return alert("Setting ထဲမှာ Telegram Bot Token အရင်ဖြည့်ပေးပါဗျာ။");
+            if (!chatId) return alert("ဝယ်သူ့ရဲ့ Telegram Chat ID မတွေ့ပါ။");
+
+            let totalAmount = 0; let itemsText = "";
+            Object.values(orderData.items).forEach((item) => {
+                let cost = item.price * item.qty; totalAmount += cost;
+                itemsText += `🔸 *${item.name}* (x${item.qty}) - ${cost.toLocaleString()} B\n`;
             });
+
+            const messageText = `🧾 *RANGOON KITCHEN - ORDER RECORD*\n───────────────────\n*📅 Time:* ${orderData.time}\n\n*🛍️ ITEMS:*\n${itemsText}\n───────────────────\n*💰 Total Amount:* \`${totalAmount.toLocaleString()} Baht\``;
+
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text: messageText, parse_mode: 'Markdown' })
+            }).then(() => alert("✅ Order Record ပို့ပြီးပါပြီ။"));
         }
 
-        function fillProductToEdit(id, name, price, subcat) {
-            document.getElementById('edit-product-id').value = id;
-            document.getElementById('new-p-name').value = name;
-            document.getElementById('new-p-price').value = price;
-            document.getElementById('new-p-subcat').value = subcat;
-            document.getElementById('form-menu-title').innerText = "✏️ ဟင်းပွဲအချက်အလက် ပြင်ဆင်ရန်";
-            document.getElementById('btn-submit-product').innerText = "UPDATE PRODUCT STREAM";
-            document.getElementById('btn-cancel-edit').classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function clearProductForm() {
-            document.getElementById('edit-product-id').value = '';
-            document.getElementById('new-p-name').value = '';
-            document.getElementById('new-p-price').value = '';
-            document.getElementById('new-p-subcat').value = '';
-            document.getElementById('form-menu-title').innerText = "ဟင်းပွဲအသစ် ထည့်သွင်းရန်";
-            document.getElementById('btn-submit-product').innerText = "SAVE TO STREAM";
-            document.getElementById('btn-cancel-edit').classList.add('hidden');
-        }
-
-        function saveProductToFirebase() {
-            const editId = document.getElementById('edit-product-id').value;
-            const name = document.getElementById('new-p-name').value.trim();
-            const price = parseFloat(document.getElementById('new-p-price').value);
-            const subcat = document.getElementById('new-p-subcat').value.trim() || 'General';
-
-            if(!name || isNaN(price)) return alert("ကျေးဇူးပြု၍ ဟင်းပွဲအမည်နှင့် စျေးနှုန်း အမှန် ဖြည့်ပါဗျာ။");
-            if(db) {
-                if(editId) {
-                    db.ref(`products/${editId}`).update({ name: name, price: price, sub_category: subcat }).then(() => {
-                        alert("ဟင်းပွဲအချက်အလက်များကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီဗျာ။"); clearProductForm();
-                    });
-                } else {
-                    db.ref('products').push().set({ name: name, price: price, sub_category: subcat }).then(() => {
-                        alert("ဟင်းပွဲအသစ် ထည့်သွင်းအောင်မြင်ပါပြီဗျာ!"); clearProductForm();
-                    });
-                }
-            }
-        }
-
-        function deleteProductSession(id) {
-            if(confirm("ဤဟင်းပွဲကို Menu စာရင်းထဲမှ လုံးဝပယ်ဖျက်လိုပါသလားဗျာ?")) {
-                if(db) db.ref(`products/${id}`).remove().then(() => alert("ပယ်ဖျက်ပြီးပါပြီဗျာ။"));
-            }
-        }
-
-        // ─── POS MAIN DASHBOARD ENGINE ───
         function initPOSMainEngine() {
             if(!db) return;
             db.ref('orders').on('value', (snapshot) => {
                 const dashContainer = document.getElementById('dashboard-orders-container'); dashContainer.innerHTML = '';
                 const settleContainer = document.getElementById('settlement-rows-container'); settleContainer.innerHTML = '';
-                let activeOrderCount = 0; currentDayTotalSales = 0; currentDayClosedBills = 0; rawOrdersSnapshotData = {};
+                let activeOrderCount = 0;
 
                 if(!snapshot.exists()) {
                     dashContainer.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 text-xs font-mono">No live active orders.</div>`;
-                    settleContainer.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-slate-400">No history available.</td></tr>`;
-                    updateCountersUI(0, 0, 0); return;
+                    return;
                 }
 
                 snapshot.forEach(child => {
                     const order = child.val(); order.key = child.key; rawOrdersSnapshotData[child.key] = order;
-
                     if(order.status !== 'cancelled') {
-                        let orderBillSum = 0; let itemsSummaryText = []; let itemsHtml = "";
-
+                        let orderBillSum = 0; let itemsHtml = "";
                         Object.values(order.items).forEach(item => {
                             let itemCost = item.price * item.qty; orderBillSum += itemCost;
-                            itemsSummaryText.push(`${item.name} x${item.qty}`);
+                            const itemImg = item.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=80";
                             itemsHtml += `
-                                <div class="flex justify-between items-center text-xs font-mono bg-slate-100 dark:bg-slate-950/50 p-1.5 px-2 rounded-lg border border-slate-200 dark:border-slate-800/40">
-                                    <span>${item.name} <b class="text-emerald-500">x${item.qty}</b></span>
-                                    <span>${itemCost.toLocaleString()} Baht</span>
+                                <div class="flex gap-2 items-center text-xs font-mono bg-slate-100 dark:bg-slate-950/50 p-1.5 px-2 rounded-lg border border-slate-200">
+                                    <img src="${itemImg}" class="w-8 h-8 rounded-md object-cover shrink-0">
+                                    <div class="flex-grow flex justify-between"><span>${item.name} <b class="text-emerald-500">x${item.qty}</b></span><span>${itemCost} B</span></div>
                                 </div>`;
                         });
 
-                        let sourceBadgeHtml = "";
-                        if(order.table_id === "DELIVERY") {
-                            let rawText = order.user_label || ""; let cleanText = rawText; let mapsBtnHtml = "";
-                            if(rawText.includes("မြေပုံလင့်ခ်: ")) {
-                                let parts = rawText.split(" | မြေပုံလင့်ခ်: "); cleanText = parts[0]; let mapsUrl = parts[1];
-                                if(mapsUrl && mapsUrl !== "No Map Link") {
-                                    mapsBtnHtml = `<a href="${mapsUrl}" target="_blank" class="mt-2 w-full bg-sky-500/20 hover:bg-sky-500 text-sky-500 hover:text-slate-950 border border-sky-500/30 text-[11px] font-bold py-1.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition no-print"><i class="fa-solid fa-map-location-dot"></i> Open Google Maps</a>`;
-                                }
-                            }
-                            sourceBadgeHtml = `
-                                <div class="space-y-1 w-full">
-                                    <span class="bg-sky-500 text-slate-950 font-black px-2 py-0.5 rounded-md text-[9px] uppercase tracking-wider"><i class="fa-brands fa-telegram"></i> Telegram Delivery</span>
-                                    <div class="text-[11px] text-slate-600 dark:text-slate-400 print:text-black bg-slate-50 dark:bg-slate-950/50 print:bg-transparent p-2 rounded-xl border border-slate-200 dark:border-slate-800/60 print:border-none leading-relaxed mt-1">${cleanText.replace(/\|/g, '<br>')}${mapsBtnHtml}</div>
-                                </div>`;
-                        } else {
-                            sourceBadgeHtml = `<div class="flex items-center gap-2"><span class="bg-emerald-500 text-slate-950 font-black px-2 py-0.5 rounded-md text-[9px] uppercase tracking-wider">🍽️ TABLE: ${order.table_id.toUpperCase()}</span><span class="text-xs text-slate-400 font-bold print:text-black">Seat #${order.user_label}</span></div>`;
-                        }
-
                         if(order.status !== 'completed') {
                             activeOrderCount++;
-                            let actionBtnText = order.status === 'pending' ? 'MARK AS PREPARED' : 'CLOSE BILL (PAID)';
-                            let actionBtnColor = order.status === 'pending' ? 'bg-sky-500 hover:bg-sky-600 text-slate-950' : 'bg-emerald-500 hover:bg-emerald-600 text-slate-950';
-                            let nextStatusValue = order.status === 'pending' ? 'served' : 'completed';
-
                             dashContainer.innerHTML += `
-                                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl flex flex-col justify-between space-y-3 shadow-sm">
-                                    <div class="flex justify-between items-start border-b border-slate-100 dark:border-slate-800/80 pb-2 w-full">${sourceBadgeHtml}<span class="text-[10px] font-mono text-slate-400 shrink-0">${order.time}</span></div>
-                                    <div class="space-y-1.5 flex-grow">${itemsHtml}</div>
-                                    <div class="border-t border-slate-100 dark:border-slate-800/80 pt-2 flex justify-between items-center font-mono"><span class="text-xs text-slate-400">Total Amount:</span><span class="text-sm font-black text-emerald-500">${orderBillSum.toLocaleString()} Baht</span></div>
-                                    <div class="flex gap-2">
-                                        <button onclick="changeStatus('${order.key}', '${nextStatusValue}')" class="flex-grow ${actionBtnColor} font-black py-2 rounded-xl text-xs tracking-wider transition">${actionBtnText}</button>
-                                        <button onclick="cancelSession('${order.key}')" class="w-9 h-9 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center rounded-xl transition"><i class="fa-solid fa-trash-can"></i></button>
-                                    </div>
+                                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-3">
+                                    <div class="text-xs font-bold text-emerald-400">TABLE / SOURCE: ${order.table_id}</div>
+                                    <div class="space-y-1.5">${itemsHtml}</div>
+                                    <div class="text-right font-black text-emerald-500">${orderBillSum} B</div>
+                                    <button onclick="triggerTelegramRecordOnly('${order.key}')" class="w-full bg-amber-500 text-slate-950 font-black py-1.5 rounded-xl text-xs">RECORD ပို့မည်</button>
+                                    <button onclick="db.ref('orders/${order.key}').update({ status: 'completed' })" class="w-full bg-emerald-500 text-slate-950 font-black py-1.5 rounded-xl text-xs">CLOSE BILL</button>
                                 </div>`;
-                        }
-
-                        if(order.status === 'completed') {
-                            currentDayClosedBills++; currentDayTotalSales += orderBillSum;
-                            let displaySource = order.table_id === 'DELIVERY' ? "Delivery" : `T-${order.table_id.toUpperCase()}`;
-                            settleContainer.innerHTML += `
-                                <tr class="border-b border-slate-100 dark:border-slate-800/40 print:border-black text-slate-600 dark:text-slate-300 print:text-black hover:bg-slate-100/40 dark:hover:bg-slate-900/20">
-                                    <td class="py-2.5 text-slate-400 print:text-black">${order.time}</td>
-                                    <td class="font-bold text-slate-700 dark:text-slate-400 print:text-black">${displaySource}</td>
-                                    <td class="max-w-xs text-slate-500 dark:text-slate-400 print:text-black">${itemsSummaryText.join(', ')}</td>
-                                    <td class="text-right font-black text-emerald-500 print:text-black">${orderBillSum.toLocaleString()} B</td>
-                                </tr>`;
                         }
                     }
                 });
-                updateCountersUI(activeOrderCount, currentDayTotalSales, currentDayClosedBills);
+                document.getElementById('order-badge-count').innerText = `Active: ${activeOrderCount}`;
             });
         }
 
-        function updateCountersUI(active, sales, bills) {
-            document.getElementById('order-badge-count').innerText = `Active: ${active}`;
-            document.getElementById('settle-total-sales').innerText = `${sales.toLocaleString()} Baht`;
-            document.getElementById('settle-count-completed').innerText = `${bills} Bills`;
-            document.getElementById('print-date-time').innerText = "Printed on: " + new Date().toLocaleString();
+        function initProductsRealtimeLoader() {
+            if(!db) return;
+            db.ref('products').on('value', (snapshot) => {
+                const tbody = document.getElementById('products-table-rows'); tbody.innerHTML = '';
+                if(!snapshot.exists()) return;
+                snapshot.forEach(child => {
+                    const p = child.val();
+                    const pImg = p.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=80";
+                    tbody.innerHTML += `
+                        <tr class="border-b border-slate-200 dark:border-slate-800">
+                            <td class="py-2 pl-2"><img src="${pImg}" class="w-10 h-10 object-cover rounded-xl bg-slate-950"></td>
+                            <td class="font-bold">${p.name}</td>
+                            <td>${p.sub_category}</td>
+                            <td class="text-emerald-500 font-bold">${p.price} B</td>
+                            <td class="text-right pr-2"><button onclick="db.ref('products/${child.key}').remove()" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>`;
+                });
+            });
         }
 
-        function archiveAndResetDailySettlement() {
-            if(currentDayClosedBills === 0 && currentDayTotalSales === 0) return alert("သိမ်းဆည်းစရာ ပြီးစီးသွားသော ဘေလ်စာရင်း မရှိသေးပါဗျာ။");
-            if(confirm("⚠️ သတိပေးချက်: ယနေ့တစ်နေ့တာစာရင်းကို ပိတ်ပြီး ဒေတာများကို Memory ထဲသို့ သိမ်းဆည်းမလားဗျာ?")) {
-                const todayDateString = new Date().toISOString().split('T')[0];
-                const archivePayload = { date: todayDateString, total_sales_baht: currentDayTotalSales, total_bills_closed: currentDayClosedBills, archived_at: new Date().toLocaleTimeString(), orders_snapshot: rawOrdersSnapshotData };
-                db.ref(`history_settlements/${todayDateString}`).set(archivePayload).then(() => { return db.ref('orders').remove(); }).then(() => {
-                    alert("🎉 တစ်နေ့တာစာရင်းကို ပိတ်သိမ်းပြီးပါပြီဗျာ။ စနစ်ကို နေ့အသစ်အဖြစ် ပြန်လည်ပြင်ဆင်ပြီးပါပြီ။"); switchTab('dashboard');
-                });
+        function saveProductToFirebase() {
+            const name = document.getElementById('new-p-name').value.trim();
+            const price = parseFloat(document.getElementById('new-p-price').value);
+            const subcat = document.getElementById('new-p-subcat').value.trim() || 'General';
+            
+            // ပုံတင်မထားရင် Default ပုံတစ်ပုံ သတ်မှတ်ပေးခြင်း
+            const finalImage = base64ImageString || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200";
+
+            if(name && !isNaN(price) && db) {
+                db.ref('products').push().set({ 
+                    name: name, 
+                    price: price, 
+                    sub_category: subcat, 
+                    image: finalImage // 📸 အသင့်ပြောင်းထားသော ပုံစာသားကုဒ်အား သိမ်းဆည်းခြင်း
+                }).then(() => clearProductForm());
             }
         }
 
-        function changeStatus(key, status) { if(db) db.ref(`orders/${key}`).update({ status: status }); }
-        function cancelSession(key) { if(confirm("ဤအော်ဒါကို ဖျက်ပစ်မလားဗျာ?")) { if(db) db.ref(`orders/${key}`).update({ status: 'cancelled' }); } }
+        function clearProductForm() { 
+            document.getElementById('new-p-name').value = ''; 
+            document.getElementById('new-p-price').value = ''; 
+            document.getElementById('new-p-subcat').value = ''; 
+            document.getElementById('new-p-image-file').value = ''; 
+            document.getElementById('img-upload-preview').classList.add('hidden');
+            base64ImageString = ""; // Reset လုပ်ခြင်း
+        }
     </script>
 </body>
 </html>
