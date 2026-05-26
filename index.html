@@ -179,9 +179,9 @@
         let currentDayClosedBills = 0;
         let rawOrdersSnapshotData = {};
         let db = null;
-        let base64ImageString = ""; // 📸 Upload လုပ်ထားတဲ့ ပုံစာသားကုဒ် သိမ်းရန် Variable
+        let base64ImageString = ""; 
 
-        // ⚠️ မင်းရဲ့ တကယ့် FIREBASE CONFIG ဒေတာတွေကို ဒီအောက်မှာ ထည့်ပါ ⚠️
+        // ⚠️ မင်းရဲ့ FIREBASE CONFIG ဒေတာများ ထည့်သွင်းပါ ⚠️
         const firebaseConfig = {
             apiKey: "AIzaSyC6aJ6JwNrjEKbnmcPKkqpjm0c6ok6cHas",
   authDomain: "rangoon-kitchen.firebaseapp.com",
@@ -206,13 +206,11 @@
             }
         };
 
-        // 📸 ပုံရွေးလိုက်တာနဲ့ Base64 ကုဒ်အဖြစ် အလိုအလျောက်ပြောင်းပေးပြီး Preview ပြသည့် Function
         function previewAndConvertImage(input) {
             const file = input.files[0];
             if (file) {
-                // Database ထဲ ဒေတာအရမ်းမကြီးအောင် ပုံ Size ကြီးရင် Alert ပေးခြင်း
                 if (file.size > 1024 * 1024) { 
-                    alert("ပုံ Size က အရမ်းကြီးနေပါတယ်ဗျာ။ 1MB အောက် ပုံလေးတွေပဲ ရွေးပေးပါဦး။");
+                    alert("ပုံ Size ကြီးလွန်းပါတယ်။ 1MB အောက်ပဲ ရွေးပေးပါ။");
                     input.value = ""; return;
                 }
                 const reader = new FileReader();
@@ -258,8 +256,8 @@
             const botToken = localStorage.getItem('cfg-bot-token');
             const chatId = orderData.customer_chat_id; 
 
-            if (!botToken) return alert("Setting ထဲမှာ Telegram Bot Token အရင်ဖြည့်ပေးပါဗျာ။");
-            if (!chatId) return alert("ဝယ်သူ့ရဲ့ Telegram Chat ID မတွေ့ပါ။");
+            if (!botToken) return alert("Setting ထဲမှာ Bot Token အရင်ဖြည့်ပါ။");
+            if (!chatId) return alert("ဝယ်သူ့ Chat ID မတွေ့ပါ။");
 
             let totalAmount = 0; let itemsText = "";
             Object.values(orderData.items).forEach((item) => {
@@ -280,7 +278,6 @@
             if(!db) return;
             db.ref('orders').on('value', (snapshot) => {
                 const dashContainer = document.getElementById('dashboard-orders-container'); dashContainer.innerHTML = '';
-                const settleContainer = document.getElementById('settlement-rows-container'); settleContainer.innerHTML = '';
                 let activeOrderCount = 0;
 
                 if(!snapshot.exists()) {
@@ -290,29 +287,56 @@
 
                 snapshot.forEach(child => {
                     const order = child.val(); order.key = child.key; rawOrdersSnapshotData[child.key] = order;
-                    if(order.status !== 'cancelled') {
+                    if(order.status !== 'cancelled' && order.status !== 'completed') {
+                        activeOrderCount++;
                         let orderBillSum = 0; let itemsHtml = "";
+                        
                         Object.values(order.items).forEach(item => {
                             let itemCost = item.price * item.qty; orderBillSum += itemCost;
                             const itemImg = item.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=80";
                             itemsHtml += `
-                                <div class="flex gap-2 items-center text-xs font-mono bg-slate-100 dark:bg-slate-950/50 p-1.5 px-2 rounded-lg border border-slate-200">
+                                <div class="flex gap-2 items-center text-xs font-mono bg-slate-100 dark:bg-slate-950/50 p-1.5 px-2 rounded-lg border border-slate-200 dark:border-slate-800">
                                     <img src="${itemImg}" class="w-8 h-8 rounded-md object-cover shrink-0">
                                     <div class="flex-grow flex justify-between"><span>${item.name} <b class="text-emerald-500">x${item.qty}</b></span><span>${itemCost} B</span></div>
                                 </div>`;
                         });
 
-                        if(order.status !== 'completed') {
-                            activeOrderCount++;
-                            dashContainer.innerHTML += `
-                                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-3">
-                                    <div class="text-xs font-bold text-emerald-400">TABLE / SOURCE: ${order.table_id}</div>
-                                    <div class="space-y-1.5">${itemsHtml}</div>
-                                    <div class="text-right font-black text-emerald-500">${orderBillSum} B</div>
-                                    <button onclick="triggerTelegramRecordOnly('${order.key}')" class="w-full bg-amber-500 text-slate-950 font-black py-1.5 rounded-xl text-xs">RECORD ပို့မည်</button>
-                                    <button onclick="db.ref('orders/${order.key}').update({ status: 'completed' })" class="w-full bg-emerald-500 text-slate-950 font-black py-1.5 rounded-xl text-xs">CLOSE BILL</button>
-                                </div>`;
+                        // 🔍 ဝယ်သူပို့လိုက်တဲ့ စာသားထဲကနေ Google Map Link ကို ဖတ်ထုတ်နည်း
+                        let mapButtonHtml = "";
+                        const labelText = order.user_label || "";
+                        if (labelText.includes("မြေပုံလင့်ခ်:")) {
+                            const parts = labelText.split("မြေပုံလင့်ခ်:");
+                            let extractedUrl = parts[1] ? parts[1].trim() : "";
+                            
+                            // အကယ်၍ ခလုတ်နှိပ်ပြီး တည်နေရာတကယ့် Link ပါလာခဲ့ရင်
+                            if (extractedUrl && extractedUrl !== "No Map Link") {
+                                mapButtonHtml = `<a href="${extractedUrl}" target="_blank" class="w-full bg-sky-500 text-slate-950 font-black py-1.5 rounded-xl text-xs text-center block hover:bg-sky-400"><i class="fa-solid fa-map-location-dot"></i> 📍 MAP ဖွင့်မည်</a>`;
+                            }
                         }
+
+                        // ဝယ်သူ့ အမည်နှင့် ဖုန်းနံပါတ်ကို သီးသန့်ခွဲထုတ်ပြသခြင်း
+                        let infoDisplayHtml = `<div class="text-[11px] text-slate-400 break-words">${labelText.split("မြေပုံလင့်ခ်:")[0]}</div>`;
+
+                        dashContainer.innerHTML += `
+                            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-3 shadow-sm flex flex-col justify-between">
+                                <div class="space-y-2">
+                                    <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-2">
+                                        <span class="text-xs font-black text-emerald-400">📍 ${order.table_id}</span>
+                                        <span class="text-[10px] font-mono text-slate-400">${order.time}</span>
+                                    </div>
+                                    ${infoDisplayHtml}
+                                    <div class="space-y-1.5 my-2 max-h-48 overflow-y-auto custom-scroll">${itemsHtml}</div>
+                                </div>
+                                <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                                    <div class="flex justify-between items-center font-black text-sm text-emerald-500 px-1">
+                                        <span>Total:</span><span>${orderBillSum} B</span>
+                                    </div>
+                                    <div class="grid grid-cols-1 gap-1.5">
+                                        ${mapButtonHtml} <button onclick="triggerTelegramRecordOnly('${order.key}')" class="w-full bg-amber-500 text-slate-950 font-black py-1.5 rounded-xl text-xs"><i class="fa-solid fa-paper-plane"></i> RECORD ပို့မည်</button>
+                                        <button onclick="db.ref('orders/${order.key}').update({ status: 'completed' })" class="w-full bg-emerald-500 text-slate-950 font-black py-1.5 rounded-xl text-xs"><i class="fa-solid fa-circle-check"></i> CLOSE BILL</button>
+                                    </div>
+                                </div>
+                            </div>`;
                     }
                 });
                 document.getElementById('order-badge-count').innerText = `Active: ${activeOrderCount}`;
@@ -343,27 +367,16 @@
             const name = document.getElementById('new-p-name').value.trim();
             const price = parseFloat(document.getElementById('new-p-price').value);
             const subcat = document.getElementById('new-p-subcat').value.trim() || 'General';
-            
-            // ပုံတင်မထားရင် Default ပုံတစ်ပုံ သတ်မှတ်ပေးခြင်း
             const finalImage = base64ImageString || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200";
 
             if(name && !isNaN(price) && db) {
-                db.ref('products').push().set({ 
-                    name: name, 
-                    price: price, 
-                    sub_category: subcat, 
-                    image: finalImage // 📸 အသင့်ပြောင်းထားသော ပုံစာသားကုဒ်အား သိမ်းဆည်းခြင်း
-                }).then(() => clearProductForm());
+                db.ref('products').push().set({ name: name, price: price, sub_category: subcat, image: finalImage }).then(() => clearProductForm());
             }
         }
 
         function clearProductForm() { 
-            document.getElementById('new-p-name').value = ''; 
-            document.getElementById('new-p-price').value = ''; 
-            document.getElementById('new-p-subcat').value = ''; 
-            document.getElementById('new-p-image-file').value = ''; 
-            document.getElementById('img-upload-preview').classList.add('hidden');
-            base64ImageString = ""; // Reset လုပ်ခြင်း
+            document.getElementById('new-p-name').value = ''; document.getElementById('new-p-price').value = ''; document.getElementById('new-p-subcat').value = ''; 
+            document.getElementById('new-p-image-file').value = ''; document.getElementById('img-upload-preview').classList.add('hidden'); base64ImageString = "";
         }
     </script>
 </body>
