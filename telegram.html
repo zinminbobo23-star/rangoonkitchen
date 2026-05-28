@@ -3,346 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rangoon Kitchen - Order Menu</title>
+    <title>Rangoon Kitchen - Customer Order</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>tailwind.config = { darkMode: 'class' }</script>
-    <style>
-        /* Hide Scrollbar */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* 🚀 TELEGRAM INTRO & PAGE ROLLER CSS ANIMATIONS */
-        @keyframes planeFlyIn {
-            0% { transform: scale(0) translate(-50px, 50px) rotate(-45deg); opacity: 0; }
-            60% { transform: scale(1.2) translate(10px, -10px) rotate(10deg); opacity: 1; }
-            100% { transform: scale(1) translate(0, 0) rotate(0deg); }
-        }
-        @keyframes textReveal {
-            0% { opacity: 0; transform: translateY(10px); filter: blur(4px); }
-            100% { opacity: 1; transform: translateY(0); filter: blur(0); }
-        }
-        @keyframes pageRollUp {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-100%); visibility: hidden; }
-        }
-        @keyframes contentFadeIn {
-            0% { opacity: 0; transform: scale(0.99) translateY(15px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        .animate-plane { animation: planeFlyIn 1.1s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
-        .animate-text { animation: textReveal 0.8s ease-out 0.4s forwards; opacity: 0; }
-        .animate-text-sub { animation: textReveal 0.8s ease-out 0.7s forwards; opacity: 0; }
-        .page-roll-exit { animation: pageRollUp 0.9s cubic-bezier(0.76, 0, 0.24, 1) forwards; }
-        .content-roll-entrance { animation: contentFadeIn 0.8s cubic-bezier(0.34, 1.3, 0.64, 1) forwards; }
-    </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased select-none overflow-hidden">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans overflow-hidden">
 
-    <div id="intro-splash-screen" style="position: fixed; inset: 0; background-color: #020617; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-        <div style="position: absolute; width: 16rem; height: 16rem; background-color: rgba(14, 165, 233, 0.1); border-radius: 9999px; filter: blur(48px);"></div>
-        <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 1.5rem;">
-            <div class="animate-plane" style="width: 6rem; height: 6rem; border-radius: 1.5rem; background: linear-gradient(to top right, #0284c7, #38bdf8); display: flex; align-items: center; justify-content: center; box-shadow: 0 25px 50px -12px rgba(14, 165, 233, 0.2);">
-                <i class="fa-solid fa-paper-plane" style="font-size: 2.25rem; color: white; margin-right: 0.25rem; margin-top: 0.125rem;"></i>
-            </div>
-            <div style="text-align: center;">
-                <h1 class="animate-text" style="font-size: 1.25rem; font-weight: 900; tracking-letter: 0.1em; text-transform: uppercase; color: #34d399;">Rangoon Kitchen</h1>
-                <p class="animate-text-sub" style="font-size: 11px; font-family: monospace; color: rgba(56, 189, 248, 0.8); margin-top: 4px;">LOADING DIGITAL MENU...</p>
-            </div>
+    <header class="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 shrink-0">
+        <h1 class="text-sm font-black text-emerald-400 uppercase">Rangoon Kitchen</h1>
+        <span id="shop-status-badge" class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400">📍 DELIVERY</span>
+    </header>
+
+    <div id="shop-closed-screen" class="hidden flex-grow flex flex-col items-center justify-center p-6 text-center space-y-3">
+        <div class="w-16 h-16 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center text-2xl animate-bounce">
+            <i class="fa-solid fa-store-slash"></i>
         </div>
+        <h2 class="text-base font-black text-rose-400">ဆိုင်ပိတ်ချိန် ဖြစ်နေပါသည်ဗျာ</h2>
+        <p class="text-xs text-slate-400 max-w-xs leading-relaxed">Rangoon Kitchen ၏ အော်ဒါလက်ခံချိန်မှာ <br><b class="text-amber-400 font-mono text-sm">12:00 PM - 3:00 PM</b> ထိသာ ဖြစ်ပါသည်။</p>
     </div>
 
-
-    <div id="main-app-content" class="opacity-0 flex flex-col h-screen overflow-hidden">
-        
-        <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 shrink-0 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <button class="text-xs text-slate-400 font-bold flex items-center gap-1 hover:text-white">
-                    <i class="fa-solid fa-xmark text-sm text-emerald-400"></i> Close
-                </button>
-                <span class="text-xs font-black text-slate-200 border-l border-slate-800 pl-2 uppercase tracking-wider">KITCHEN</span>
-            </div>
-            <div class="flex items-center gap-3 text-slate-400 text-xs">
-                <i class="fa-solid fa-chevron-down cursor-pointer hover:text-white"></i>
-                <i class="fa-solid fa-ellipsis cursor-pointer hover:text-white"></i>
-            </div>
-        </header>
-
-        <div class="flex-grow overflow-y-auto no-scrollbar p-4 space-y-6 pb-28">
-            
-            <div class="bg-slate-900/40 border border-slate-800/80 rounded-xl p-4 space-y-3">
-                <div class="text-emerald-400 text-xs font-bold flex items-center gap-1.5">
-                    <i class="fa-solid fa-user-plus"></i> ပို့ဆောင်မည့် အချက်အလက်
-                </div>
-                
-                <input type="text" id="cust-name" placeholder="ဝယ်သူအမည် ဖြည့်ပါ..." class="w-full bg-slate-950 border border-slate-800/80 rounded-lg p-3 text-xs text-slate-300 outline-none focus:border-emerald-500/50 transition">
-                <input type="tel" id="cust-phone" placeholder="ဖုန်းနံပါတ် 09xxxxxxxxx" class="w-full bg-slate-950 border border-slate-800/80 rounded-lg p-3 text-xs text-slate-300 outline-none focus:border-emerald-500/50 font-mono transition">
-                
-                <button id="btn-get-location" onclick="getLocationGPS()" class="w-full bg-sky-950/40 hover:bg-sky-950/60 border border-sky-900/50 text-sky-400 font-medium py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 transition">
-                    <i class="fa-solid fa-location-crosshairs animate-pulse"></i> 📍 တည်နေရာပေးပို့ရန် (Get Location)
-                </button>
-                <input type="hidden" id="cust-gps" value="">
-            </div>
-
-            <div class="space-y-3">
-                <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
-                    OUR MENU (DELIVERY PRICES)
-                </div>
-                
-                <div id="menu-items-scroll-zone" class="space-y-3">
-                    </div>
-            </div>
-
-        </div>
-
-        <footer class="fixed bottom-0 inset-x-0 bg-slate-950 border-t border-slate-900 px-4 py-3 flex items-center justify-between z-20">
-            <div>
-                <div class="text-[9px] font-bold text-slate-500 uppercase tracking-wider">TOTAL ITEMS SELECTED</div>
-                <div class="text-xs font-black text-emerald-400 font-mono">
-                    <span id="cart-badge">0</span> Items - <span id="cart-total-price">0</span> Baht
-                </div>
-            </div>
-            <button onclick="submitFinalOrderToFirebase()" id="btn-submit-order" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs px-6 py-2.5 rounded-lg tracking-wider transition uppercase shadow-md shadow-emerald-500/10">
-                SEND ORDER
+    <main id="shop-active-screen" class="flex-grow overflow-y-auto p-4 space-y-4 custom-scroll pb-28">
+        <section class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
+            <h2 class="text-xs font-bold text-emerald-400 uppercase tracking-wider"><i class="fa-solid fa-user-check"></i> ပို့ဆောင်မည့် အချက်အလက်</h2>
+            <input type="text" id="cust-name" placeholder="ဝယ်သူအမည် ဖြည့်ပါ..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-slate-200 outline-none">
+            <input type="tel" id="cust-phone" placeholder="ဖုန်းနံပါတ် 09xxxxxxxxx" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-slate-200 font-mono outline-none">
+            <button onclick="getUserCurrentGPSLocation()" id="btn-location" class="w-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2">
+                <i class="fa-solid fa-location-crosshairs"></i> 📍 တည်နေရာပေးပို့ရန် (Get Location)
             </button>
-        </footer>
+            <input type="hidden" id="cust-geo-coords" value="">
+            <p id="location-status-text" class="text-[10px] text-slate-500 text-center hidden"></p>
+        </section>
 
-    </div>
+        <section class="space-y-3">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Our Menu (Delivery Prices)</h2>
+            <div id="customer-menu-container" class="grid grid-cols-1 gap-3"></div>
+        </section>
+    </main>
+
+    <footer id="shop-footer" class="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 flex items-center justify-between z-50">
+        <div class="font-mono">
+            <div class="text-[10px] text-slate-400 uppercase">Total Items Selected</div>
+            <div id="cart-total-counter" class="text-sm font-black text-emerald-400">0 Items - 0 Baht</div>
+        </div>
+        <button onclick="submitFinalOrderToFirebase()" class="bg-emerald-500 text-slate-950 font-black px-6 py-3 rounded-xl text-xs tracking-wider shadow-lg">SEND ORDER</button>
+    </footer>
 
     <script>
-        // 🚀 INTRO ANIMATION TIMER & PAGE ROLLER CONTROLLER
-        window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                const splash = document.getElementById('intro-splash-screen');
-                const mainApp = document.getElementById('main-app-content');
-                if(splash && mainApp) {
-                    splash.classList.add('page-roll-exit');
-                    mainApp.classList.remove('opacity-0');
-                    mainApp.classList.add('content-roll-entrance');
-                }
-            }, 2500); // ၂.၅ စက္ကန့်ပြည့်ရင် စာမျက်နှာ လိပ်တက်သွားမယ်
-        });
+        let db = null; let shoppingCart = {}; let customerChatId = ""; let globalGeoLink = "No Map Link";
+        const OPEN_HOUR = 7; const CLOSE_HOUR = 23;
 
-        // HTML5 Geolocation API Handler
-        function getLocationGPS() {
-            const btn = document.getElementById('btn-get-location');
-            if (navigator.geolocation) {
-                btn.innerText = "တည်နေရာ ရှာဖွေနေဆဲ... (Locating...)";
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        document.getElementById('cust-gps').value = `https://www.google.com/maps?q=${lat},${lng}`;
-                        btn.className = "w-full bg-emerald-950/40 border border-emerald-900/50 text-emerald-400 font-medium py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 transition";
-                        btn.innerHTML = `<i class="fa-solid fa-circle-check"></i> တည်နေရာ ရရှိပြီးပါပြီ (Location Saved)`;
-                    },
-                    (error) => {
-                        alert("GPS တည်နေရာ ဖတ်မရပါသဖြင့် Google Map Link ကို ဖုန်းထဲကနေ ကူးယူပြီး အမည်နေရာမှာ တွဲထည့်ပေးပါဗျာ။");
-                        btn.innerText = "📍 တည်နေရာပေးပို့ရန် (Get Location)";
+        // ⚠️ FIREBASE CONFIG ဖြည့်ရန် ⚠️
+        const firebaseConfig = {
+            apiKey: "AIzaSyC6aJ6JwNrjEKbnmcPKkqpjm0c6ok6cHas",
+            authDomain: "rangoon-kitchen.firebaseapp.com",
+            databaseURL: "https://rangoon-kitchen-default-rtdb.firebaseio.com",
+            projectId: "rangoon-kitchen",
+            storageBucket: "rangoon-kitchen.firebasestorage.app",
+            messagingSenderId: "939905185755",
+            appId: "1:939905185755:web:f462d65e5fdf65d2d359fe"
+        };
+
+        window.onload = function() {
+            if(!checkShopOpenStatus()) return;
+            try {
+                if (window.Telegram && window.Telegram.WebApp) {
+                    window.Telegram.WebApp.ready(); window.Telegram.WebApp.expand();
+                    if (window.Telegram.WebApp.initDataUnsafe.user) {
+                        customerChatId = window.Telegram.WebApp.initDataUnsafe.user.id.toString();
                     }
-                );
-            } else {
-                alert("လူကြီးမင်း Browser မှ GPS ရှာဖွေမှုကို Support မလုပ်ပါ ခင်ဗျာ။");
+                }
+            } catch (e) {}
+            if (firebaseConfig.databaseURL && !firebaseConfig.databaseURL.includes("YOUR_")) {
+                firebase.initializeApp(firebaseConfig); db = firebase.database();
+                loadProductsFromDatabase();
+            }
+        };
+
+        function checkShopOpenStatus() {
+            const currentHour = new Date().getHours();
+            if (currentHour >= OPEN_HOUR && currentHour < CLOSE_HOUR) return true;
+            document.getElementById('shop-active-screen').classList.add('hidden');
+            document.getElementById('shop-footer').classList.add('hidden');
+            document.getElementById('shop-status-badge').className = "text-[11px] font-bold px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-500";
+            document.getElementById('shop-status-badge').innerText = "🛑 CLOSED";
+            document.getElementById('shop-closed-screen').classList.remove('hidden');
+            return false;
+        }
+
+        function getUserCurrentGPSLocation() {
+            const statusText = document.getElementById('location-status-text');
+            statusText.classList.remove('hidden'); statusText.innerText = "📍 တည်နေရာ ရှာဖွေနေပါသည်...";
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((pos) => {
+                    globalGeoLink = `http://googleusercontent.com/maps.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                    document.getElementById('cust-geo-coords').value = `${pos.coords.latitude},${pos.coords.longitude}`;
+                    statusText.innerText = "✅ တည်နေရာ ဖမ်းယူမှု အောင်မြင်ပါသည်။";
+                    statusText.className = "text-[10px] text-emerald-400 text-center mt-1";
+                }, () => { statusText.innerText = "❌ GPS တည်နေရာ ဖတ်မရပါ။"; }, { enableHighAccuracy: true });
             }
         }
 
-        // Firebase Configuration
-        let db = null;
-        let menuProductsData = {};
-        let shoppingCart = {};
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyC6aJ6JwNrjEKbnmcPKkqpjm0c6ok6cHas",
-  authDomain: "rangoon-kitchen.firebaseapp.com",
-  databaseURL: "https://rangoon-kitchen-default-rtdb.firebaseio.com",
-  projectId: "rangoon-kitchen",
-  storageBucket: "rangoon-kitchen.firebasestorage.app",
-  messagingSenderId: "939905185755",
-  appId: "1:939905185755:web:f462d65e5fdf65d2d359fe"
-        };
-
-        if (firebaseConfig.databaseURL && !firebaseConfig.databaseURL.includes("YOUR_")) {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-            syncMenuFromStream();
-        }
-
-        // Live Dynamic Firebase Menu Synchronization
-        function syncMenuFromStream() {
-            if(!db) return;
+        function loadProductsFromDatabase() {
+            if (!db) return;
             db.ref('products').on('value', (snapshot) => {
-                const container = document.getElementById('menu-items-scroll-zone');
-                container.innerHTML = '';
+                const container = document.getElementById('customer-menu-container'); container.innerHTML = '';
+                if (!snapshot.exists()) return;
 
-                if(!snapshot.exists()) {
-                    container.innerHTML = `<div class="text-center text-xs text-slate-500 pt-8">ဟင်းပွဲများ မရှိသေးပါဗျာ။</div>`;
-                    return;
-                }
-
-                menuProductsData = {};
                 snapshot.forEach(child => {
-                    const item = child.val();
-                    item.key = child.key;
-                    menuProductsData[child.key] = item;
-                    
-                    const cartQty = shoppingCart[item.key] ? shoppingCart[item.key].qty : 0;
+                    const p = child.val(); const pKey = child.key;
+                    const deliveryPrice = p.price_delivery || p.price; 
 
-                    // Add-ons Options များကို Checkbox List အဖြစ် Render လုပ်ပေးခြင်း (ပုံစံအတိုင်း ကွက်တိ)
+                    // 🥚 Dynamic Add-ons Checkbox စာသားများ ထုတ်လုပ်ခြင်း
                     let addonsHtml = "";
-                    if(item.addons_string && item.addons_string.trim() !== "") {
-                        let parts = item.addons_string.split(',');
-                        let checkBoxes = "";
-                        parts.forEach(p => {
-                            let opt = p.split(':');
-                            let optName = opt[0].trim();
-                            let optPrice = opt[1] ? parseInt(opt[1].trim()) : 0;
-                            checkBoxes += `
-                                <label class="flex items-center gap-2 text-xs text-slate-400 cursor-pointer select-none">
-                                    <input type="checkbox" name="addons-${item.key}" value="${optName}:${optPrice}" onchange="updateCartItemWidgetQty('${item.key}', 0)" class="w-3.5 h-3.5 bg-slate-950 border-slate-800 text-emerald-500 rounded focus:ring-0">
-                                    <span>${optName} (+${optPrice}B)</span>
-                                </label>`;
+                    if (p.addons_string) {
+                        // ကော်မာတွေကို ဖြတ်ပြီး List တစ်ခုလုပ်မယ်
+                        const options = p.addons_string.split(',');
+                        options.forEach((opt, idx) => {
+                            const parts = opt.split(':');
+                            const addonName = parts[0] ? parts[0].trim() : "";
+                            const addonPrice = parts[1] ? parseFloat(parts[1].trim()) : 0;
+
+                            if (addonName) {
+                                addonsHtml += `
+                                    <label class="flex items-center gap-2 text-[11px] text-slate-400 cursor-pointer">
+                                        <input type="checkbox" data-pkey="${pKey}" data-name="${addonName}" data-price="${addonPrice}" onchange="recalculateDynamicAddons('${pKey}', ${deliveryPrice})" class="addon-checkbox-${pKey} rounded text-emerald-500 bg-slate-950 border-slate-800 focus:ring-0">
+                                        ${addonName} (+${addonPrice}B)
+                                    </label>`;
+                            }
                         });
-                        addonsHtml = `<div class="grid grid-cols-2 gap-x-4 gap-y-2.5 pt-3 border-t border-slate-800/60 mt-3">${checkBoxes}</div>`;
                     }
 
                     container.innerHTML += `
-                        <div class="bg-slate-900/40 border border-slate-800/60 rounded-xl p-4 shadow-sm flex flex-col">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <img src="${item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=150'}" class="w-12 h-12 object-cover rounded-xl bg-slate-950 border border-slate-800">
-                                    <div>
-                                        <h4 class="text-xs font-black text-slate-200 uppercase tracking-wide">${item.name}</h4>
-                                        <div class="text-xs font-bold text-sky-400 font-mono mt-0.5">${item.price_delivery || item.price} <span class="text-[10px] text-slate-500">Baht</span></div>
-                                    </div>
+                        <div class="bg-slate-900 border border-slate-800/80 p-4 rounded-2xl space-y-3 shadow-sm">
+                            <div class="flex gap-3 items-center">
+                                <img src="${p.image || ''}" class="w-16 h-16 object-cover rounded-xl bg-slate-950 shrink-0">
+                                <div class="flex-grow">
+                                    <div class="text-xs font-black text-slate-200">${p.name}</div>
+                                    <div class="text-xs font-black text-sky-400 font-mono mt-1">${deliveryPrice} Baht</div>
                                 </div>
-                                <div class="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-0.5 h-8">
-                                    <button onclick="updateCartItemWidgetQty('${item.key}', -1)" class="w-7 h-full text-slate-500 text-xs font-bold hover:text-white">-</button>
-                                    <span id="widget-qty-${item.key}" class="text-xs font-black font-mono w-6 text-center text-slate-300">${cartQty}</span>
-                                    <button onclick="updateCartItemWidgetQty('${item.key}', 1)" class="w-7 h-full text-slate-500 text-xs font-bold hover:text-white">+</button>
+                                <div class="flex items-center gap-2.5 bg-slate-950 px-2 py-1 rounded-xl border border-slate-800">
+                                    <button onclick="updateCartQty('${pKey}', '${p.name}', ${deliveryPrice}, -1)" class="w-6 h-6 text-slate-400 text-xs">-</button>
+                                    <span id="qty-badge-${pKey}" class="text-xs font-black font-mono w-4 text-center">0</span>
+                                    <button onclick="updateCartQty('${pKey}', '${p.name}', ${deliveryPrice}, 1)" class="w-6 h-6 text-emerald-400 text-xs">+</button>
                                 </div>
                             </div>
-                            ${addonsHtml}
+                            
+                            <div class="${addonsHtml ? 'grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/60' : 'hidden'}">
+                                ${addonsHtml}
+                            </div>
                         </div>`;
                 });
             });
         }
 
-        // Cart Calculation Engine
-        function updateCartItemWidgetQty(itemKey, direction) {
-            const item = menuProductsData[itemKey];
-            if (!item) return;
-
-            let chosenAddons = [];
-            let extraCost = 0;
-            const checkboxes = document.querySelectorAll(`input[name="addons-${itemKey}"]:checked`);
-            checkboxes.forEach(cb => {
-                let [name, price] = cb.value.split(':');
-                chosenAddons.push(name);
-                extraCost += parseInt(price || 0);
-            });
-
-            if (!shoppingCart[itemKey]) {
-                shoppingCart[itemKey] = {
-                    name: item.name,
-                    price: parseFloat(item.price_delivery || item.price),
-                    qty: 0,
-                    addons: []
-                };
-            }
-
-            shoppingCart[itemKey].qty += direction;
-            shoppingCart[itemKey].addons = chosenAddons;
-            shoppingCart[itemKey].calculatedPrice = shoppingCart[itemKey].price + extraCost;
-
-            if (shoppingCart[itemKey].qty <= 0) {
-                delete shoppingCart[itemKey];
-                if (document.getElementById(`widget-qty-${itemKey}`)) {
-                    document.getElementById(`widget-qty-${itemKey}`).innerText = 0;
-                }
-            } else {
-                document.getElementById(`widget-qty-${itemKey}`).innerText = shoppingCart[itemKey].qty;
-            }
-
-            refreshGlobalCartFooterWidget();
-        }
-
-        function refreshGlobalCartFooterWidget() {
-            let totalItems = 0;
-            let totalPrice = 0;
-
-            Object.values(shoppingCart).forEach(cartItem => {
-                totalItems += cartItem.qty;
-                totalPrice += (cartItem.calculatedPrice * cartItem.qty);
-            });
-
-            document.getElementById('cart-badge').innerText = totalItems;
-            document.getElementById('cart-total-price').innerText = totalPrice.toLocaleString();
-        }
-
-        // Send Finalized Order to Firebase Realtime Node
-        function submitFinalOrderToFirebase() {
-            if(!db) return;
+        // Add-ons ခြစ်တာတွေ လိုက်တွက်ပေးသည့် စနစ်သစ်
+        function recalculateDynamicAddons(pKey, basePrice) {
+            if (!shoppingCart[pKey]) return; 
             
-            if (Object.keys(shoppingCart).length === 0) {
-                alert("ကျေးဇူးပြု၍ ဟင်းပွဲ အနည်းဆုံး တစ်ခု ရွေးချယ်ပေးပါဗျာ။");
-                return;
+            let extraCost = 0; let selectedAddons = [];
+            const checkboxes = document.querySelectorAll(`.addon-checkbox-${pKey}`);
+            
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    const aName = cb.getAttribute('data-name');
+                    const aPrice = parseFloat(cb.getAttribute('data-price'));
+                    extraCost += aPrice;
+                    selectedAddons.push(`${aName} (+${aPrice}B)`);
+                }
+            });
+            
+            shoppingCart[pKey].price = basePrice + extraCost;
+            shoppingCart[pKey].addons = selectedAddons;
+            refreshCartCounterUI();
+        }
+
+        function updateCartQty(pKey, name, deliveryPrice, change) {
+            if (!shoppingCart[pKey]) {
+                shoppingCart[pKey] = { name: name, price: deliveryPrice, qty: 0, addons: [] };
             }
-
-            const nameInput = document.getElementById('cust-name').value.trim();
-            const phoneInput = document.getElementById('cust-phone').value.trim();
-            const gpsInput = document.getElementById('cust-gps').value.trim();
-
-            if(!nameInput || !phoneInput) {
-                alert("အော်ဒါပို့ဆောင်ရန် 'ဝယ်သူအမည်' နှင့် 'ဖုန်းနံပါတ်' ကို ဖြည့်ပေးပါ ခင်ဗျာ။");
-                return;
+            shoppingCart[pKey].qty += change;
+            if (shoppingCart[pKey].qty <= 0) {
+                delete shoppingCart[pKey];
+                document.getElementById(`qty-badge-${pKey}`).innerText = "0";
+                // ခြင်းတောင်းထဲက ပယ်ဖျက်လျှင် Checkbox များအား အကုန် အမှန်ခြစ်ဖြုတ်ခြင်း
+                document.querySelectorAll(`.addon-checkbox-${pKey}`).forEach(cb => cb.checked = false);
+            } else {
+                document.getElementById(`qty-badge-${pKey}`).innerText = shoppingCart[pKey].qty;
+                recalculateDynamicAddons(pKey, deliveryPrice); 
             }
+            refreshCartCounterUI();
+        }
 
-            const btn = document.getElementById('btn-submit-order');
-            btn.disabled = true;
-            btn.innerText = "SENDING...";
+        function refreshCartCounterUI() {
+            let totalQty = 0; let totalPrice = 0;
+            Object.values(shoppingCart).forEach(item => { totalQty += item.qty; totalPrice += (item.price * item.qty); });
+            document.getElementById('cart-total-counter').innerText = `${totalQty} Items - ${totalPrice.toLocaleString()} Baht`;
+        }
 
-            const userLabelInput = document.getElementById('cust-gps').value !== "" ? `📍 GPS: ${gpsInput}` : "No GPS provided";
-            const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        function submitFinalOrderToFirebase() {
+            const name = document.getElementById('cust-name').value.trim();
+            const phone = document.getElementById('cust-phone').value.trim();
+            if (!name || !phone) return alert("အမည်နှင့် ဖုန်းနံပါတ် ဖြည့်ပေးပါဦးဗျာ။");
+            if (Object.keys(shoppingCart).length === 0) return alert("ခြင်းတောင်းထဲမှာ ဘာမှမရှိသေးပါဘူးဗျာ။");
 
-            // Create Meta String standard format for POS interface reception
-            const formattedLabel = `👤 ဝယ်သူ: ${nameInput} | 📞 ဖုန်း: ${phoneInput} | ${userLabelInput}`;
+            const now = new Date();
+            const userLabelCombined = `အမည်: ${name} | ဖုန်း: ${phone} | မြေပုံလင့်ခ်: ${globalGeoLink}`;
 
-            const finalPayload = {
-                table_id: "DELIVERY",
-                time: timeString,
-                status: "pending",
-                user_label: formattedLabel,
-                items: shoppingCart
+            const finalOrderPayload = {
+                table_id: "TELEGRAM_DELIVERY", customer_chat_id: customerChatId, user_label: userLabelCombined,
+                status: "pending", time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), items: shoppingCart
             };
 
-            db.ref('orders').push().set(finalPayload).then(() => {
-                alert("အော်ဒါကို ဆိုင်သို့ အောင်မြင်စွာ ပေးပို့ပြီးပါပြီ ခင်ဗျာ။");
-                shoppingCart = {};
-                refreshGlobalCartFooterWidget();
-                
-                // Clear state fields
-                document.getElementById('cust-name').value = '';
-                document.getElementById('cust-phone').value = '';
-                document.getElementById('cust-gps').value = '';
-                
-                const locBtn = document.getElementById('btn-get-location');
-                locBtn.className = "w-full bg-sky-950/40 hover:bg-sky-950/60 border border-sky-900/50 text-sky-400 font-medium py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 transition";
-                locBtn.innerHTML = `<i class="fa-solid fa-location-crosshairs animate-pulse"></i> 📍 တည်နေရာပေးပို့ရန် (Get Location)`;
-
-                document.querySelectorAll('[id^="widget-qty-"]').forEach(el => el.innerText = 0);
-                
-                // Uncheck all boxes
-                document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
-
-                btn.disabled = false;
-                btn.innerText = "SEND ORDER";
-            }).catch(err => {
-                alert("Error sending order: " + err);
-                btn.disabled = false;
-                btn.innerText = "SEND ORDER";
+            db.ref('orders').push().set(finalOrderPayload).then(() => {
+                alert("🎉 အော်ဒါကို ဆိုင်သို့ အောင်မြင်စွာ ပေးပို့ပြီးပါပြီဗျာ။");
+                if (window.Telegram && window.Telegram.WebApp) window.Telegram.WebApp.close();
             });
         }
     </script>
