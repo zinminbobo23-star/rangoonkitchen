@@ -54,17 +54,17 @@
 
     <script>
         let db = null; let shoppingCart = {}; let customerChatId = ""; let globalGeoLink = "No Map Link";
-        const OPEN_HOUR = 12; const CLOSE_HOUR = 15;
+        const OPEN_HOUR = 7; const CLOSE_HOUR = 23;
 
         // ⚠️ FIREBASE CONFIG ဖြည့်ရန် ⚠️
         const firebaseConfig = {
             apiKey: "AIzaSyC6aJ6JwNrjEKbnmcPKkqpjm0c6ok6cHas",
-  authDomain: "rangoon-kitchen.firebaseapp.com",
-  databaseURL: "https://rangoon-kitchen-default-rtdb.firebaseio.com",
-  projectId: "rangoon-kitchen",
-  storageBucket: "rangoon-kitchen.firebasestorage.app",
-  messagingSenderId: "939905185755",
-  appId: "1:939905185755:web:f462d65e5fdf65d2d359fe"
+            authDomain: "rangoon-kitchen.firebaseapp.com",
+            databaseURL: "https://rangoon-kitchen-default-rtdb.firebaseio.com",
+            projectId: "rangoon-kitchen",
+            storageBucket: "rangoon-kitchen.firebasestorage.app",
+            messagingSenderId: "939905185755",
+            appId: "1:939905185755:web:f462d65e5fdf65d2d359fe"
         };
 
         window.onload = function() {
