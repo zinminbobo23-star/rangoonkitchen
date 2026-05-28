@@ -4,30 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rangoon Kitchen - Cashier POS Dashboard</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-    <script>
-        tailwind.config = { darkMode: 'class' }
-    </script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
     <style>
         .custom-scroll::-webkit-scrollbar { width: 5px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
         
+        /* 🖨️ Print Style Dynamics (Paper Size အလိုက် ပြောင်းလဲပေးမည့် စနစ်) */
         @media print {
             aside, header, button, .no-print, form, .input-box-area { display: none !important; }
             body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
-            .print-area { display: block !important; margin: 0 auto !important; padding: 4px !important; background: white !important; color: black !important; }
-            .tab-panel { display: block !important; }
+            .print-area { display: block !important; margin: 0 auto !important; padding: 10px !important; background: white !important; color: black !important; }
+            
+            /* Setting က ရွေးထားတဲ့ Paper Size အလိုက် CSS Width ကို ထိန်းချုပ်ခြင်း */
+            .print-80mm { width: 80mm !important; }
+            .print-58mm { width: 58mm !important; }
+            .print-a4 { width: 210mm !important; }
         }
+        .print-area { display: none; }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex font-sans overflow-hidden transition-colors duration-200">
 
+    <!-- SIDEBAR NAVIGATION -->
     <aside class="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between shrink-0 no-print">
         <div>
             <div class="h-16 flex items-center px-6 border-b border-slate-200 dark:border-slate-800 gap-3">
@@ -41,51 +43,40 @@
                 <button onclick="switchTab('add-menu')" id="btn-add-menu" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition">
                     <i class="fa-solid fa-plate-wheat"></i> Menu Management
                 </button>
-                <button onclick="switchTab('settlement')" id="btn-settlement" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition">
-                    <i class="fa-solid fa-wallet"></i> Daily Settlement
-                </button>
                 <button onclick="switchTab('settings')" id="btn-settings" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition">
-                    <i class="fa-solid fa-sliders"></i> Setting
+                    <i class="fa-solid fa-gear"></i> Settings
                 </button>
             </nav>
         </div>
-        <div class="p-4 border-t border-slate-200 dark:border-slate-800 text-[10px] font-mono text-slate-400 text-center">
-            CONSOLED BY THAR GYI
-        </div>
+        <div class="p-4 border-t border-slate-200 dark:border-slate-800 text-[10px] font-mono text-slate-400 text-center">CONSOLED BY THAR GYI</div>
     </aside>
 
     <div class="flex-grow flex flex-col overflow-hidden">
-        
         <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 shrink-0 no-print">
             <h2 id="current-panel-title" class="text-sm font-black uppercase tracking-widest text-slate-400">Dashboard Panel</h2>
-            <div id="live-clock" class="text-xs font-mono text-slate-500">Loading Clock...</div>
+            <div id="live-clock" class="text-xs font-mono text-slate-500">Loading...</div>
         </header>
 
         <div class="flex-grow overflow-y-auto p-6 custom-scroll">
             
+            <!-- 1. DASHBOARD PANEL -->
             <main id="panel-dashboard" class="tab-panel space-y-6">
                 <div class="flex justify-between items-center">
                     <h3 class="text-xs font-bold text-slate-400 tracking-wider">ဝင်လာသော အော်ဒါများစာရင်း</h3>
-                    <span id="order-badge-count" class="bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 text-xs font-bold font-mono px-2.5 py-0.5 rounded-full">Active: 0</span>
+                    <span id="order-badge-count" class="bg-emerald-500/10 text-emerald-500 text-xs font-bold font-mono px-2.5 py-0.5 rounded-full">Active: 0</span>
                 </div>
-                <div id="dashboard-orders-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="col-span-full text-center py-12 text-slate-400 text-xs font-mono">Firebase Config ကို ဖြည့်သွင်းရန် စောင့်ဆိုင်းနေပါသည်...</div>
-                </div>
+                <div id="dashboard-orders-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
             </main>
 
+            <!-- 2. MENU MANAGEMENT PANEL -->
             <main id="panel-add-menu" class="tab-panel hidden space-y-6">
                 <div class="max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl space-y-4 input-box-area">
-                    <h3 id="form-menu-title" class="text-xs font-black text-emerald-500 uppercase tracking-wider">ဟင်းပွဲအသစ် ထည့်သွင်းရန်</h3>
-                    <input type="hidden" id="edit-product-id" value="">
+                    <h3 class="text-xs font-black text-emerald-500 uppercase tracking-wider">ဟင်းပွဲအသစ် ထည့်သွင်းရန်</h3>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div class="md:col-span-1">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">အမည် (Item Name)</label>
                             <input type="text" id="new-p-name" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">စျေးနှုန်း (Baht)</label>
-                            <input type="number" id="new-p-price" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500">
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">အမျိုးအစား (Category)</label>
@@ -93,17 +84,31 @@
                         </div>
                     </div>
 
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">ဟင်းပွဲပုံ တင်ရန် (Upload Menu Image)</label>
-                        <div class="flex items-center gap-3">
-                            <input type="file" id="new-p-image-file" accept="image/*" onchange="previewAndConvertImage(this)" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-emerald-500/10 file:text-emerald-500 hover:file:bg-emerald-500/20 cursor-pointer bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-1">
-                            <img id="img-upload-preview" src="" class="w-11 h-11 object-cover rounded-xl border border-slate-200 dark:border-slate-800 hidden bg-slate-950">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-[10px] font-bold text-amber-500 uppercase block mb-1">ဆိုင်ထိုင်စျေး (Dine-in Price)</label>
+                            <input type="number" id="new-p-price" placeholder="0" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500 font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-sky-500 uppercase block mb-1">တုန်ကင်/Delivery စျေး (Telegram Price)</label>
+                            <input type="number" id="new-p-price-del" placeholder="0" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500 font-bold">
                         </div>
                     </div>
 
-                    <div class="flex gap-2">
-                        <button onclick="saveProductToFirebase()" id="btn-submit-product" class="flex-grow bg-emerald-500 text-slate-950 font-black py-3 rounded-xl text-xs tracking-wider shadow-lg">SAVE TO STREAM</button>
+                    <div>
+                        <label class="text-[10px] font-bold text-emerald-400 uppercase block mb-1">အပိုဆောင်း ရွေးချယ်စရာများ (Add-ons Options)</label>
+                        <input type="text" id="new-p-addons" placeholder="ပဲကြော်:5, ကြက်ဥ:10, အသားဖတ်:15" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500 font-mono">
                     </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">ဟင်းပွဲပုံ တင်ရန်</label>
+                        <div class="flex items-center gap-3">
+                            <input type="file" id="new-p-image-file" accept="image/*" onchange="previewAndConvertImage(this)" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-emerald-500/10 file:text-emerald-500 hover:file:bg-emerald-500/20 cursor-pointer bg-slate-100 dark:bg-slate-950 border border-slate-200 rounded-xl p-1">
+                            <img id="img-upload-preview" src="" class="w-11 h-11 object-cover rounded-xl border hidden bg-slate-950">
+                        </div>
+                    </div>
+
+                    <button onclick="saveProductToFirebase()" class="w-full bg-emerald-500 text-slate-950 font-black py-3 rounded-xl text-xs tracking-wider shadow-lg">SAVE TO STREAM</button>
                 </div>
 
                 <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 overflow-x-auto">
@@ -113,7 +118,9 @@
                                 <th class="py-2 pl-2">Pic</th>
                                 <th>Item Name</th>
                                 <th>Category</th>
-                                <th>Price</th>
+                                <th>Dine-In Price</th>
+                                <th class="text-sky-400">Telegram Price</th>
+                                <th>Add-ons Info</th>
                                 <th class="text-right">Actions</th>
                             </tr>
                         </thead>
@@ -122,66 +129,99 @@
                 </div>
             </main>
 
-            <main id="panel-settlement" class="tab-panel hidden space-y-4 print-area">
-                <div class="flex justify-between items-center no-print">
-                    <h3 class="text-sm font-bold text-amber-500">Daily Revenue Summary</h3>
-                    <div class="flex gap-2">
-                        <button onclick="window.print()" class="bg-sky-500 text-slate-950 font-black px-4 py-2 rounded-xl text-xs flex items-center gap-2"><i class="fa-solid fa-print"></i> PRINT REPORT</button>
-                        <button onclick="archiveAndResetDailySettlement()" class="bg-rose-500 text-white font-black px-4 py-2 rounded-xl text-xs flex items-center gap-2"><i class="fa-solid fa-calendar-day"></i> CLOSE DAY & RESET</button>
+            <!-- 3. SETTINGS PANEL (Receipt + Printer Configuration အပြည့်အစုံ) -->
+            <main id="panel-settings" class="tab-panel hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- ဘယ်ဘက်ခြမ်း: ဆိုင်အချက်အလက်ပြင်ဆင်ရန် -->
+                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl space-y-4">
+                        <h3 class="text-xs font-black text-emerald-500 uppercase tracking-wider"><i class="fa-solid fa-file-invoice"></i> ဘောင်ချာ အချက်အလက်များ (Receipt Settings)</h3>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">ဆိုင်အမည် (Shop Name)</label>
+                                <input type="text" id="cfg-shop-name" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">ဆိုင်လိပ်စာ (Shop Address)</label>
+                                <input type="text" id="cfg-shop-address" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">ဖုန်းနံပါတ် (Phone Number)</label>
+                                <input type="text" id="cfg-shop-phone" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">အောက်ခြေနှုတ်ခွန်းဆက်စာ (Footer Message)</label>
+                                <input type="text" id="cfg-shop-footer" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500">
+                            </div>
+                        </div>
+                        <button onclick="saveReceiptConfiguration()" class="w-full bg-emerald-500 text-slate-950 font-black py-2.5 rounded-xl text-xs shadow-md">SAVE CONFIGURATION</button>
                     </div>
-                </div>
-                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 overflow-x-auto">
-                    <table class="w-full text-left text-xs font-mono">
-                        <thead>
-                            <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-400 uppercase">
-                                <th class="py-2">Time</th>
-                                <th>Source</th>
-                                <th>Items</th>
-                                <th class="text-right">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody id="settlement-rows-container"></tbody>
-                    </table>
-                </div>
-            </main>
 
-            <main id="panel-settings" class="tab-panel hidden max-w-xl space-y-6">
-                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl space-y-4">
-                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider">🖨️ Configuration</h3>
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Select Printer Type</label>
-                        <select id="cfg-printer-type" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500">
-                            <option value="80mm">80mm Thermal POS Printer</option>
-                            <option value="58mm">58mm Mini Portable Printer</option>
-                        </select>
+                    <!-- ညာဘက်ခြမ်း: 🖨️ PRINT SETTING & PAPER SIZES -->
+                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl space-y-5">
+                        <h3 class="text-xs font-black text-emerald-500 uppercase tracking-wider"><i class="fa-solid fa-print"></i> ပရင်တာ စနစ်ပြင်ဆင်ချက် (Print Settings)</h3>
+                        
+                        <!-- Paper Size Selector (Can change any paper type) -->
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase block">စာရွက်အရွယ်အစား ရွေးချယ်ရန် (Paper Size)</label>
+                            <select id="cfg-paper-size" onchange="savePrinterSizeSetting(this.value)" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none text-slate-200 font-bold focus:border-emerald-500">
+                                <option value="80mm">Thermal Paper 80mm (စံသုံး ပရင်တာ)</option>
+                                <option value="58mm">Thermal Paper 58mm (ပရင်တာအသေးစား)</option>
+                                <option value="a4">Standard A4 Paper (ရုံးသုံးစာရွက်ကြီး)</option>
+                            </select>
+                            <span class="text-[10px] text-slate-400 block">⚠️ စကရင်ထက်က ဘောင်ချာ layout ကို သင်ရွေးချယ်လိုက်တဲ့ Paper size အတိုင်း စနစ်က ကွက်တိပြောင်းလဲ ပေးသွားမှာဖြစ်ပါတယ်။</span>
+                        </div>
+
+                        <div class="pt-4 border-t dark:border-slate-800 space-y-2">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase block">မျက်နှာပြင် အရောင်စနစ် (Theme Mode)</label>
+                            <div class="flex gap-2">
+                                <button onclick="setThemeMode('light')" class="flex-grow bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500/10 border dark:border-slate-700 p-2.5 rounded-xl text-xs font-bold transition">🌞 Light Mode</button>
+                                <button onclick="setThemeMode('dark')" class="flex-grow bg-slate-950 border border-emerald-500 text-emerald-400 p-2.5 rounded-xl text-xs font-bold transition">🌙 Dark Mode</button>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t dark:border-slate-800 space-y-1">
+                            <h4 class="text-[11px] font-bold text-rose-500 uppercase">🚨 Danger Zone</h4>
+                            <button onclick="dangerWipeAllOrders()" class="bg-rose-500/10 text-rose-500 border border-rose-500/20 px-4 py-2 rounded-xl text-xs font-bold hover:bg-rose-500 hover:text-white transition">WIPE ALL ORDERS</button>
+                        </div>
                     </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-amber-500 uppercase block mb-1">Telegram Bot Token (ဝယ်သူဆီ Record ပို့ရန်)</label>
-                        <input type="text" id="cfg-bot-token" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500 font-mono">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Shop Header Name</label>
-                        <input type="text" id="cfg-shop-name" value="Rangoon Kitchen" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500">
-                    </div>
-                    <button onclick="savePrinterSettings()" class="w-full bg-emerald-500 text-slate-950 font-black py-3 rounded-xl text-xs tracking-wider transition">SAVE CONFIGURATION</button>
+
                 </div>
             </main>
 
         </div>
     </div>
 
-    <style id="dynamic-print-style"></style>
+    <!-- 🖨️ PRINT OUT LAYOUT CONTAINER (ဒီဧရိယာသည် Print ထုတ်မည့်အချိန်မှသာ စာရွက်ပေါ်တွင် ပေါ်လာမည်ဖြစ်သည်) -->
+    <div id="receipt-print-area" class="print-area font-mono text-xs text-black">
+        <div class="text-center space-y-1">
+            <h2 id="p-receipt-shop" class="text-sm font-black uppercase">Rangoon Kitchen</h2>
+            <p id="p-receipt-address" class="text-[10px]">Shop Address</p>
+            <p id="p-receipt-phone" class="text-[10px]">Phone: 09x-xxx-xxx</p>
+            <div class="border-b border-dashed border-black my-2"></div>
+        </div>
+        <div class="space-y-1 text-[11px]">
+            <div><b>Table/Target:</b> <span id="p-receipt-table">TABLE</span></div>
+            <div><b>Time:</b> <span id="p-receipt-time">00:00</span></div>
+        </div>
+        <div class="border-b border-dashed border-black my-2"></div>
+        <div id="p-receipt-items-list" class="space-y-1.5 text-[11px]"></div>
+        <div class="border-b border-dashed border-black my-2"></div>
+        <div class="flex justify-between font-black text-sm">
+            <span>TOTAL AMOUNT:</span>
+            <span id="p-receipt-total">0 B</span>
+        </div>
+        <div class="text-center mt-4 text-[10px] pt-2 border-t border-dashed border-black">
+            <p id="p-receipt-footer">Thank you!</p>
+        </div>
+    </div>
 
     <script>
         setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString(); }, 1000);
+        let db = null; let base64ImageString = ""; let rawOrdersSnapshotData = {};
 
-        let currentDayTotalSales = 0;
-        let currentDayClosedBills = 0;
-        let rawOrdersSnapshotData = {};
-        let db = null;
-        let base64ImageString = ""; 
-
-        // ⚠️ မင်းရဲ့ FIREBASE CONFIG ဒေတာများ ထည့်သွင်းပါ ⚠️
+        // ⚠️ FIREBASE CONFIG ဖြည့်ရန် ⚠️
         const firebaseConfig = {
             apiKey: "AIzaSyC6aJ6JwNrjEKbnmcPKkqpjm0c6ok6cHas",
   authDomain: "rangoon-kitchen.firebaseapp.com",
@@ -191,34 +231,89 @@
   messagingSenderId: "939905185755",
   appId: "1:939905185755:web:f462d65e5fdf65d2d359fe"
         };
-        
+
         window.onload = function() {
-            loadLocalConfigs();
+            const savedTheme = localStorage.getItem('pos-theme') || 'dark';
+            setThemeMode(savedTheme);
+
+            // စက္ကူအရွယ်အစား setting အဟောင်းကို ပြန်ဖတ်ခြင်း
+            const savedPaperSize = localStorage.getItem('pos-paper-size') || '80mm';
+            document.getElementById('cfg-paper-size').value = savedPaperSize;
+
+            document.getElementById('cfg-shop-name').value = localStorage.getItem('receipt-shop-name') || "Rangoon Kitchen";
+            document.getElementById('cfg-shop-address').value = localStorage.getItem('receipt-shop-address') || "Bangkok, Thailand";
+            document.getElementById('cfg-shop-phone').value = localStorage.getItem('receipt-shop-phone') || "09x-xxx-xxx";
+            document.getElementById('cfg-shop-footer').value = localStorage.getItem('receipt-shop-footer') || "Thank you! Please come again.";
+
             if (firebaseConfig.databaseURL && !firebaseConfig.databaseURL.includes("YOUR_")) {
-                try {
-                    if (!firebase.apps.length) { 
-                        firebase.initializeApp(firebaseConfig); 
-                        db = firebase.database(); 
-                        initPOSMainEngine(); 
-                        initProductsRealtimeLoader(); 
-                    }
-                } catch(e) { console.error("Firebase Init Error:", e); }
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+                initPOSMainEngine();
+                initProductsRealtimeLoader();
             }
         };
+
+        // Paper Size ဆက်တင် သိမ်းဆည်းရန်
+        function savePrinterSizeSetting(val) {
+            localStorage.setItem('pos-paper-size', val);
+        }
+
+        function saveReceiptConfiguration() {
+            localStorage.setItem('receipt-shop-name', document.getElementById('cfg-shop-name').value.trim());
+            localStorage.setItem('receipt-shop-address', document.getElementById('cfg-shop-address').value.trim());
+            localStorage.setItem('receipt-shop-phone', document.getElementById('cfg-shop-phone').value.trim());
+            localStorage.setItem('receipt-shop-footer', document.getElementById('cfg-shop-footer').value.trim());
+            alert("✅ Receipt Configurations Saved Successfully!");
+        }
+
+        // 🖨️ Manual Print Function (ကိုယ်တိုင်နှိပ်မှ Print ထွက်မည့်စနစ်)
+        function triggerManualReceiptPrint(orderKey) {
+            const order = rawOrdersSnapshotData[orderKey];
+            if (!order) return;
+
+            // ဆက်တင်ထဲက သတ်မှတ်ထားတဲ့ စာရွက် size အတိုင်း Class အစားထိုးခြင်း
+            const paperSize = localStorage.getItem('pos-paper-size') || '80mm';
+            const printArea = document.getElementById('receipt-print-area');
+            printArea.className = `print-area font-mono text-xs text-black print-${paperSize}`;
+
+            // ဘောင်ချာထဲသို့ ဒေတာများ ထည့်သွင်းခြင်း
+            document.getElementById('p-receipt-shop').innerText = localStorage.getItem('receipt-shop-name') || "Rangoon Kitchen";
+            document.getElementById('p-receipt-address').innerText = localStorage.getItem('receipt-shop-address') || "";
+            document.getElementById('p-receipt-phone').innerText = "Phone: " + (localStorage.getItem('receipt-shop-phone') || "");
+            document.getElementById('p-receipt-footer').innerText = localStorage.getItem('receipt-shop-footer') || "";
+            document.getElementById('p-receipt-table').innerText = order.table_id;
+            document.getElementById('p-receipt-time').innerText = order.time;
+
+            let listHtml = ""; let totalSum = 0;
+            Object.values(order.items).forEach(item => {
+                let cost = item.price * item.qty;
+                totalSum += cost;
+                let addTxt = (item.addons && item.addons.length > 0) ? `<div class="text-[9px] pl-2">+ ${item.addons.join(', ')}</div>` : '';
+                listHtml += `
+                    <div>
+                        <div class="flex justify-between">
+                            <span>${item.name} x${item.qty}</span>
+                            <span>${cost} B</span>
+                        </div>
+                        ${addTxt}
+                    </div>`;
+            });
+
+            document.getElementById('p-receipt-items-list').innerHTML = listHtml;
+            document.getElementById('p-receipt-total').innerText = totalSum + " Baht";
+
+            // Window Print dialog စနစ်ကို ခေါ်ယူခြင်း
+            window.print();
+        }
 
         function previewAndConvertImage(input) {
             const file = input.files[0];
             if (file) {
-                if (file.size > 1024 * 1024) { 
-                    alert("ပုံ Size ကြီးလွန်းပါတယ်။ 1MB အောက်ပဲ ရွေးပေးပါ။");
-                    input.value = ""; return;
-                }
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     base64ImageString = e.target.result;
-                    const previewImg = document.getElementById('img-upload-preview');
-                    previewImg.src = base64ImageString;
-                    previewImg.classList.remove('hidden');
+                    document.getElementById('img-upload-preview').src = base64ImageString;
+                    document.getElementById('img-upload-preview').classList.remove('hidden');
                 };
                 reader.readAsDataURL(file);
             }
@@ -226,115 +321,98 @@
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-panel').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('aside nav button').forEach(btn => {
-                btn.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition";
-            });
             document.getElementById(`panel-${tabId}`).classList.remove('hidden');
-            document.getElementById(`btn-${tabId}`).className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm bg-emerald-500 text-slate-950 shadow-md";
-            document.getElementById('current-panel-title').innerText = `${tabId.replace('-', ' ')} Panel`;
-        }
 
-        function savePrinterSettings() {
-            localStorage.setItem('cfg-printer-type', document.getElementById('cfg-printer-type').value);
-            localStorage.setItem('cfg-bot-token', document.getElementById('cfg-bot-token').value.trim());
-            localStorage.setItem('cfg-print-name', document.getElementById('cfg-shop-name').value.trim());
-            loadLocalConfigs(); alert("Configuration Saved!");
-        }
-
-        function loadLocalConfigs() {
-            const printerType = localStorage.getItem('cfg-printer-type') || '80mm';
-            document.getElementById('cfg-printer-type').value = printerType;
-            document.getElementById('cfg-bot-token').value = localStorage.getItem('cfg-bot-token') || '';
-            document.getElementById('cfg-shop-name').value = localStorage.getItem('cfg-print-name') || "Rangoon Kitchen";
-            let widthValue = printerType === '58mm' ? "280px" : "420px";
-            document.getElementById('dynamic-print-style').innerHTML = `@media print { .print-area { width: ${widthValue} !important; max-width: ${widthValue} !important; } }`;
-        }
-
-        function triggerTelegramRecordOnly(orderKey) {
-            if(!rawOrdersSnapshotData[orderKey]) return;
-            const orderData = rawOrdersSnapshotData[orderKey];
-            const botToken = localStorage.getItem('cfg-bot-token');
-            const chatId = orderData.customer_chat_id; 
-
-            if (!botToken) return alert("Setting ထဲမှာ Bot Token အရင်ဖြည့်ပါ။");
-            if (!chatId) return alert("ဝယ်သူ့ Chat ID မတွေ့ပါ။");
-
-            let totalAmount = 0; let itemsText = "";
-            Object.values(orderData.items).forEach((item) => {
-                let cost = item.price * item.qty; totalAmount += cost;
-                itemsText += `🔸 *${item.name}* (x${item.qty}) - ${cost.toLocaleString()} B\n`;
+            const tabs = ['dashboard', 'add-menu', 'settings'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`btn-${t}`);
+                if (t === tabId) {
+                    btn.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm bg-emerald-500 text-slate-950 shadow-md";
+                } else {
+                    btn.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition";
+                }
             });
+            document.getElementById('current-panel-title').innerText = `${tabId.replace('-',' ')} Panel`;
+        }
 
-            const messageText = `🧾 *RANGOON KITCHEN - ORDER RECORD*\n───────────────────\n*📅 Time:* ${orderData.time}\n\n*🛍️ ITEMS:*\n${itemsText}\n───────────────────\n*💰 Total Amount:* \`${totalAmount.toLocaleString()} Baht\``;
+        function setThemeMode(mode) {
+            const root = document.getElementById('app-root');
+            if (mode === 'light') {
+                root.classList.remove('dark');
+            } else {
+                root.classList.add('dark');
+            }
+            localStorage.setItem('pos-theme', mode);
+        }
 
-            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: chatId, text: messageText, parse_mode: 'Markdown' })
-            }).then(() => alert("✅ Order Record ပို့ပြီးပါပြီ။"));
+        function dangerWipeAllOrders() {
+            if (confirm("🚨 သတိပေးချက်! အော်ဒါမှတ်တမ်းဟောင်းများ အားလုံးကို အပြီးပိုင် ဖျက်ဆီးပစ်မှာ သေချာပါသလားဗျာ?")) {
+                if (db) {
+                    db.ref('orders').remove().then(() => {
+                        alert("✅ အော်ဒါများအားလုံးကို အောင်မြင်စွာ ဖျက်ဆီးပြီးပါပြီ။");
+                        switchTab('dashboard');
+                    });
+                }
+            }
         }
 
         function initPOSMainEngine() {
             if(!db) return;
             db.ref('orders').on('value', (snapshot) => {
-                const dashContainer = document.getElementById('dashboard-orders-container'); dashContainer.innerHTML = '';
-                let activeOrderCount = 0;
-
-                if(!snapshot.exists()) {
-                    dashContainer.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 text-xs font-mono">No live active orders.</div>`;
-                    return;
-                }
+                const dashContainer = document.getElementById('dashboard-orders-container');
+                dashContainer.innerHTML = ''; let activeOrderCount = 0;
+                if(!snapshot.exists()) return;
 
                 snapshot.forEach(child => {
                     const order = child.val(); order.key = child.key; rawOrdersSnapshotData[child.key] = order;
-                    if(order.status !== 'cancelled' && order.status !== 'completed') {
+                    if(order.status !== 'completed' && order.status !== 'cancelled') {
                         activeOrderCount++;
                         let orderBillSum = 0; let itemsHtml = "";
-                        
+
                         Object.values(order.items).forEach(item => {
                             let itemCost = item.price * item.qty; orderBillSum += itemCost;
-                            const itemImg = item.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=80";
+                            let addonsText = "";
+                            if (item.addons && item.addons.length > 0) {
+                                addonsText = `<div class="text-[10px] text-amber-500 font-bold">➕ အပိုဆောင်း: ${item.addons.join(', ')}</div>`;
+                            }
+
                             itemsHtml += `
-                                <div class="flex gap-2 items-center text-xs font-mono bg-slate-100 dark:bg-slate-950/50 p-1.5 px-2 rounded-lg border border-slate-200 dark:border-slate-800">
-                                    <img src="${itemImg}" class="w-8 h-8 rounded-md object-cover shrink-0">
-                                    <div class="flex-grow flex justify-between"><span>${item.name} <b class="text-emerald-500">x${item.qty}</b></span><span>${itemCost} B</span></div>
+                                <div class="text-xs font-mono bg-slate-100 dark:bg-slate-950/50 p-2 rounded-lg border dark:border-slate-800">
+                                    <div class="flex justify-between">
+                                        <span>${item.name} <b class="text-emerald-500">x${item.qty}</b></span>
+                                        <span>${itemCost} B</span>
+                                    </div>
+                                    ${addonsText}
                                 </div>`;
                         });
 
-                        // 🔍 ဝယ်သူပို့လိုက်တဲ့ စာသားထဲကနေ Google Map Link ကို ဖတ်ထုတ်နည်း
-                        let mapButtonHtml = "";
-                        const labelText = order.user_label || "";
+                        let mapButtonHtml = ""; const labelText = order.user_label || "";
                         if (labelText.includes("မြေပုံလင့်ခ်:")) {
                             const parts = labelText.split("မြေပုံလင့်ခ်:");
                             let extractedUrl = parts[1] ? parts[1].trim() : "";
-                            
-                            // အကယ်၍ ခလုတ်နှိပ်ပြီး တည်နေရာတကယ့် Link ပါလာခဲ့ရင်
                             if (extractedUrl && extractedUrl !== "No Map Link") {
-                                mapButtonHtml = `<a href="${extractedUrl}" target="_blank" class="w-full bg-sky-500 text-slate-950 font-black py-1.5 rounded-xl text-xs text-center block hover:bg-sky-400"><i class="fa-solid fa-map-location-dot"></i> 📍 MAP ဖွင့်မည်</a>`;
+                                mapButtonHtml = `<a href="${extractedUrl}" target="_blank" class="w-full bg-sky-500 text-slate-950 font-black py-1.5 rounded-xl text-xs text-center block"><i class="fa-solid fa-map-location-dot"></i> 📍 MAP ဖွင့်မည်</a>`;
                             }
                         }
 
-                        // ဝယ်သူ့ အမည်နှင့် ဖုန်းနံပါတ်ကို သီးသန့်ခွဲထုတ်ပြသခြင်း
-                        let infoDisplayHtml = `<div class="text-[11px] text-slate-400 break-words">${labelText.split("မြေပုံလင့်ခ်:")[0]}</div>`;
-
                         dashContainer.innerHTML += `
-                            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-3 shadow-sm flex flex-col justify-between">
+                            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-3 flex flex-col justify-between shadow-sm">
                                 <div class="space-y-2">
-                                    <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-2">
+                                    <div class="flex justify-between items-center border-b dark:border-slate-800 pb-2">
                                         <span class="text-xs font-black text-emerald-400">📍 ${order.table_id}</span>
-                                        <span class="text-[10px] font-mono text-slate-400">${order.time}</span>
+                                        <span class="text-[10px] text-slate-400">${order.time}</span>
                                     </div>
-                                    ${infoDisplayHtml}
-                                    <div class="space-y-1.5 my-2 max-h-48 overflow-y-auto custom-scroll">${itemsHtml}</div>
+                                    <div class="text-[11px] text-slate-400">${labelText.split("မြေပုံလင့်ခ်:")[0]}</div>
+                                    <div class="space-y-1.5 max-h-48 overflow-y-auto custom-scroll">${itemsHtml}</div>
                                 </div>
-                                <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                                    <div class="flex justify-between items-center font-black text-sm text-emerald-500 px-1">
+                                <div class="space-y-2 pt-2 border-t dark:border-slate-800">
+                                    <div class="flex justify-between items-center font-black text-sm text-emerald-500">
                                         <span>Total:</span><span>${orderBillSum} B</span>
                                     </div>
-                                    <div class="grid grid-cols-1 gap-1.5">
-                                        ${mapButtonHtml} <button onclick="triggerTelegramRecordOnly('${order.key}')" class="w-full bg-amber-500 text-slate-950 font-black py-1.5 rounded-xl text-xs"><i class="fa-solid fa-paper-plane"></i> RECORD ပို့မည်</button>
-                                        <button onclick="db.ref('orders/${order.key}').update({ status: 'completed' })" class="w-full bg-emerald-500 text-slate-950 font-black py-1.5 rounded-xl text-xs"><i class="fa-solid fa-circle-check"></i> CLOSE BILL</button>
-                                    </div>
+                                    ${mapButtonHtml}
+                                    <!-- 🖨️ PRINT BILL BUTTON (ဒီခလုတ်ကိုနှိပ်မှ Print ထွက်မည်ဖြစ်သည်) -->
+                                    <button onclick="triggerManualReceiptPrint('${order.key}')" class="w-full bg-amber-500 text-slate-950 font-black py-1.5 rounded-xl text-xs flex items-center justify-center gap-1"><i class="fa-solid fa-print"></i> PRINT RECEIPT</button>
+                                    <button onclick="db.ref('orders/${order.key}').update({ status: 'completed' })" class="w-full bg-emerald-500 text-slate-950 font-black py-1.5 rounded-xl text-xs">CLOSE BILL</button>
                                 </div>
                             </div>`;
                     }
@@ -350,13 +428,14 @@
                 if(!snapshot.exists()) return;
                 snapshot.forEach(child => {
                     const p = child.val();
-                    const pImg = p.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=80";
                     tbody.innerHTML += `
-                        <tr class="border-b border-slate-200 dark:border-slate-800">
-                            <td class="py-2 pl-2"><img src="${pImg}" class="w-10 h-10 object-cover rounded-xl bg-slate-950"></td>
+                        <tr class="border-b dark:border-slate-800 text-[11px]">
+                            <td class="py-2 pl-2"><img src="${p.image || ''}" class="w-10 h-10 object-cover rounded-xl bg-slate-950"></td>
                             <td class="font-bold">${p.name}</td>
                             <td>${p.sub_category}</td>
-                            <td class="text-emerald-500 font-bold">${p.price} B</td>
+                            <td class="text-amber-500 font-bold">${p.price} B</td>
+                            <td class="text-sky-500 font-bold">${p.price_delivery || p.price} B</td>
+                            <td class="text-emerald-500 text-[10px] max-w-[150px] truncate">${p.addons_string || 'None'}</td>
                             <td class="text-right pr-2"><button onclick="db.ref('products/${child.key}').remove()" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></td>
                         </tr>`;
                 });
@@ -366,17 +445,23 @@
         function saveProductToFirebase() {
             const name = document.getElementById('new-p-name').value.trim();
             const price = parseFloat(document.getElementById('new-p-price').value);
+            const priceDel = parseFloat(document.getElementById('new-p-price-del').value) || price;
             const subcat = document.getElementById('new-p-subcat').value.trim() || 'General';
+            const addonsStr = document.getElementById('new-p-addons').value.trim();
             const finalImage = base64ImageString || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200";
 
             if(name && !isNaN(price) && db) {
-                db.ref('products').push().set({ name: name, price: price, sub_category: subcat, image: finalImage }).then(() => clearProductForm());
+                db.ref('products').push().set({ 
+                    name: name, price: price, price_delivery: priceDel, sub_category: subcat, addons_string: addonsStr, image: finalImage 
+                }).then(() => {
+                    document.getElementById('new-p-name').value = '';
+                    document.getElementById('new-p-price').value = '';
+                    document.getElementById('new-p-price-del').value = '';
+                    document.getElementById('new-p-addons').value = '';
+                    document.getElementById('img-upload-preview').classList.add('hidden');
+                    base64ImageString = "";
+                });
             }
-        }
-
-        function clearProductForm() { 
-            document.getElementById('new-p-name').value = ''; document.getElementById('new-p-price').value = ''; document.getElementById('new-p-subcat').value = ''; 
-            document.getElementById('new-p-image-file').value = ''; document.getElementById('img-upload-preview').classList.add('hidden'); base64ImageString = "";
         }
     </script>
 </body>
