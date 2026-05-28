@@ -10,16 +10,20 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script>tailwind.config = { darkMode: 'class' }</script>
     <style>
-        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        /* Custom Scrollbar Setup */
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
         
-        /* 🖨️ Print Style Dynamics (Paper Size အလိုက် ပြောင်းလဲပေးမည့် စနစ်) */
+        /* 🖨️ PRINT STYLE OPTIMIZATION */
+        @page { margin: 0; }
         @media print {
-            aside, header, button, .no-print, form, .input-box-area { display: none !important; }
-            body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
-            .print-area { display: block !important; margin: 0 auto !important; padding: 10px !important; background: white !important; color: black !important; }
-            
-            /* Setting က ရွေးထားတဲ့ Paper Size အလိုက် CSS Width ကို ထိန်းချုပ်ခြင်း */
+            body * { visibility: hidden; }
+            #receipt-print-area, #receipt-print-area * { visibility: visible; }
+            #receipt-print-area {
+                position: absolute; left: 0; top: 0; margin: 0 !important;
+                padding: 4mm !important; background: white !important; color: black !important; display: block !important;
+            }
             .print-80mm { width: 80mm !important; }
             .print-58mm { width: 58mm !important; }
             .print-a4 { width: 210mm !important; }
@@ -30,7 +34,7 @@
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex font-sans overflow-hidden transition-colors duration-200">
 
     <!-- SIDEBAR NAVIGATION -->
-    <aside class="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between shrink-0 no-print">
+    <aside class="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between shrink-0">
         <div>
             <div class="h-16 flex items-center px-6 border-b border-slate-200 dark:border-slate-800 gap-3">
                 <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
@@ -51,28 +55,52 @@
         <div class="p-4 border-t border-slate-200 dark:border-slate-800 text-[10px] font-mono text-slate-400 text-center">CONSOLED BY THAR GYI</div>
     </aside>
 
+    <!-- MAIN CONTENT CONTENT CONTAINER -->
     <div class="flex-grow flex flex-col overflow-hidden">
-        <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 shrink-0 no-print">
+        <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 shrink-0">
             <h2 id="current-panel-title" class="text-sm font-black uppercase tracking-widest text-slate-400">Dashboard Panel</h2>
             <div id="live-clock" class="text-xs font-mono text-slate-500">Loading...</div>
         </header>
 
-        <div class="flex-grow overflow-y-auto p-6 custom-scroll">
+        <!-- Main Panel Body - Screen တစ်ခုလုံးကို ပြည့်နေစေပြီး အတွင်းကောင်တွေပဲ Scroll ထိန်းချုပ်မည့် Container -->
+        <div class="flex-grow overflow-hidden p-6">
             
             <!-- 1. DASHBOARD PANEL -->
-            <main id="panel-dashboard" class="tab-panel space-y-6">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xs font-bold text-slate-400 tracking-wider">ဝင်လာသော အော်ဒါများစာရင်း</h3>
-                    <span id="order-badge-count" class="bg-emerald-500/10 text-emerald-500 text-xs font-bold font-mono px-2.5 py-0.5 rounded-full">Active: 0</span>
+            <main id="panel-dashboard" class="tab-panel h-full flex flex-col space-y-4">
+                
+                <!-- 💰 STATS CARDS (Top Static Section) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 shrink-0">
+                    <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-5 rounded-2xl shadow-lg text-slate-950 flex flex-col justify-between h-24">
+                        <span class="text-[10px] font-black uppercase tracking-widest opacity-70">Daily Total Revenue (ယနေ့ရောင်းရငွေ)</span>
+                        <div class="flex items-baseline gap-1">
+                            <span id="daily-total-amount" class="text-2xl font-black font-mono">0</span>
+                            <span class="text-xs font-bold">THB</span>
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex flex-col justify-between h-24">
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Orders (လက်ရှိအော်ဒါ)</span>
+                        <div class="flex justify-between items-center">
+                            <span id="order-badge-count" class="text-2xl font-black font-mono text-emerald-500">0</span>
+                            <i class="fa-solid fa-utensils text-slate-300 dark:text-slate-700 text-xl"></i>
+                        </div>
+                    </div>
                 </div>
-                <div id="dashboard-orders-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+                <!-- 🛒 ORDERS ACTIVE SCROLL ZONE (ဒီနေရာကို Page Roller အဖြစ် သီးသန့်ခွဲထုတ်လိုက်တာပါ) -->
+                <div class="flex-grow flex flex-col min-h-0 border-t border-slate-200 dark:border-slate-800 pt-3">
+                    <h3 class="text-xs font-bold text-slate-400 tracking-wider mb-2 shrink-0">ဝင်လာသော အော်ဒါများစာရင်း</h3>
+                    
+                    <!-- ဓာတ်ပြားကဲ့သို့ အောက်ဆင်းကြည့်နိုင်မည့် နေရာအစစ် (Scroll Area) -->
+                    <div id="dashboard-orders-container" class="flex-grow overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-6 pr-1 custom-scroll">
+                        <!-- Firebase ကနေဝင်လာမယ့် အော်ဒါကတ်တွေ ဒီထဲမှာ ကွက်တိ Auto Roll လုပ်ပြီး ပြပေးနေမှာပါ -->
+                    </div>
+                </div>
             </main>
 
             <!-- 2. MENU MANAGEMENT PANEL -->
-            <main id="panel-add-menu" class="tab-panel hidden space-y-6">
-                <div class="max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl space-y-4 input-box-area">
+            <main id="panel-add-menu" class="tab-panel hidden h-full overflow-y-auto custom-scroll space-y-6 pr-1">
+                <div class="max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl space-y-4">
                     <h3 class="text-xs font-black text-emerald-500 uppercase tracking-wider">ဟင်းပွဲအသစ် ထည့်သွင်းရန်</h3>
-                    
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">အမည် (Item Name)</label>
@@ -83,7 +111,6 @@
                             <input type="text" id="new-p-subcat" placeholder="Noodles" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500">
                         </div>
                     </div>
-
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                             <label class="text-[10px] font-bold text-amber-500 uppercase block mb-1">ဆိုင်ထိုင်စျေး (Dine-in Price)</label>
@@ -94,20 +121,17 @@
                             <input type="number" id="new-p-price-del" placeholder="0" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500 font-bold">
                         </div>
                     </div>
-
                     <div>
                         <label class="text-[10px] font-bold text-emerald-400 uppercase block mb-1">အပိုဆောင်း ရွေးချယ်စရာများ (Add-ons Options)</label>
                         <input type="text" id="new-p-addons" placeholder="ပဲကြော်:5, ကြက်ဥ:10, အသားဖတ်:15" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none focus:border-emerald-500 font-mono">
                     </div>
-
                     <div>
                         <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">ဟင်းပွဲပုံ တင်ရန်</label>
                         <div class="flex items-center gap-3">
-                            <input type="file" id="new-p-image-file" accept="image/*" onchange="previewAndConvertImage(this)" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-emerald-500/10 file:text-emerald-500 hover:file:bg-emerald-500/20 cursor-pointer bg-slate-100 dark:bg-slate-950 border border-slate-200 rounded-xl p-1">
+                            <input type="file" id="new-p-image-file" accept="image/*" onchange="previewAndConvertImage(this)" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-emerald-500/10 file:text-emerald-500 cursor-pointer bg-slate-100 dark:bg-slate-950 border border-slate-200 rounded-xl p-1">
                             <img id="img-upload-preview" src="" class="w-11 h-11 object-cover rounded-xl border hidden bg-slate-950">
                         </div>
                     </div>
-
                     <button onclick="saveProductToFirebase()" class="w-full bg-emerald-500 text-slate-950 font-black py-3 rounded-xl text-xs tracking-wider shadow-lg">SAVE TO STREAM</button>
                 </div>
 
@@ -129,14 +153,11 @@
                 </div>
             </main>
 
-            <!-- 3. SETTINGS PANEL (Receipt + Printer Configuration အပြည့်အစုံ) -->
-            <main id="panel-settings" class="tab-panel hidden space-y-6">
+            <!-- 3. SETTINGS PANEL -->
+            <main id="panel-settings" class="tab-panel hidden h-full overflow-y-auto custom-scroll space-y-6 pr-1">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
-                    <!-- ဘယ်ဘက်ခြမ်း: ဆိုင်အချက်အလက်ပြင်ဆင်ရန် -->
                     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl space-y-4">
                         <h3 class="text-xs font-black text-emerald-500 uppercase tracking-wider"><i class="fa-solid fa-file-invoice"></i> ဘောင်ချာ အချက်အလက်များ (Receipt Settings)</h3>
-                        
                         <div class="space-y-3">
                             <div>
                                 <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">ဆိုင်အမည် (Shop Name)</label>
@@ -158,11 +179,8 @@
                         <button onclick="saveReceiptConfiguration()" class="w-full bg-emerald-500 text-slate-950 font-black py-2.5 rounded-xl text-xs shadow-md">SAVE CONFIGURATION</button>
                     </div>
 
-                    <!-- ညာဘက်ခြမ်း: 🖨️ PRINT SETTING & PAPER SIZES -->
                     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl space-y-5">
                         <h3 class="text-xs font-black text-emerald-500 uppercase tracking-wider"><i class="fa-solid fa-print"></i> ပရင်တာ စနစ်ပြင်ဆင်ချက် (Print Settings)</h3>
-                        
-                        <!-- Paper Size Selector (Can change any paper type) -->
                         <div class="space-y-2">
                             <label class="text-[10px] font-bold text-slate-400 uppercase block">စာရွက်အရွယ်အစား ရွေးချယ်ရန် (Paper Size)</label>
                             <select id="cfg-paper-size" onchange="savePrinterSizeSetting(this.value)" class="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-sm outline-none text-slate-200 font-bold focus:border-emerald-500">
@@ -170,9 +188,7 @@
                                 <option value="58mm">Thermal Paper 58mm (ပရင်တာအသေးစား)</option>
                                 <option value="a4">Standard A4 Paper (ရုံးသုံးစာရွက်ကြီး)</option>
                             </select>
-                            <span class="text-[10px] text-slate-400 block">⚠️ စကရင်ထက်က ဘောင်ချာ layout ကို သင်ရွေးချယ်လိုက်တဲ့ Paper size အတိုင်း စနစ်က ကွက်တိပြောင်းလဲ ပေးသွားမှာဖြစ်ပါတယ်။</span>
                         </div>
-
                         <div class="pt-4 border-t dark:border-slate-800 space-y-2">
                             <label class="text-[10px] font-bold text-slate-400 uppercase block">မျက်နှာပြင် အရောင်စနစ် (Theme Mode)</label>
                             <div class="flex gap-2">
@@ -180,39 +196,37 @@
                                 <button onclick="setThemeMode('dark')" class="flex-grow bg-slate-950 border border-emerald-500 text-emerald-400 p-2.5 rounded-xl text-xs font-bold transition">🌙 Dark Mode</button>
                             </div>
                         </div>
-
                         <div class="pt-4 border-t dark:border-slate-800 space-y-1">
                             <h4 class="text-[11px] font-bold text-rose-500 uppercase">🚨 Danger Zone</h4>
                             <button onclick="dangerWipeAllOrders()" class="bg-rose-500/10 text-rose-500 border border-rose-500/20 px-4 py-2 rounded-xl text-xs font-bold hover:bg-rose-500 hover:text-white transition">WIPE ALL ORDERS</button>
                         </div>
                     </div>
-
                 </div>
             </main>
 
         </div>
     </div>
 
-    <!-- 🖨️ PRINT OUT LAYOUT CONTAINER (ဒီဧရိယာသည် Print ထုတ်မည့်အချိန်မှသာ စာရွက်ပေါ်တွင် ပေါ်လာမည်ဖြစ်သည်) -->
-    <div id="receipt-print-area" class="print-area font-mono text-xs text-black">
-        <div class="text-center space-y-1">
-            <h2 id="p-receipt-shop" class="text-sm font-black uppercase">Rangoon Kitchen</h2>
-            <p id="p-receipt-address" class="text-[10px]">Shop Address</p>
-            <p id="p-receipt-phone" class="text-[10px]">Phone: 09x-xxx-xxx</p>
-            <div class="border-b border-dashed border-black my-2"></div>
+    <!-- 🖨️ RECEIPT PRINT OUT CONTAINER -->
+    <div id="receipt-print-area" class="font-mono text-xs text-black">
+        <div style="text-align: center; margin-bottom: 8px;">
+            <h2 id="p-receipt-shop" style="font-size: 16px; font-weight: bold; margin: 0; text-transform: uppercase;">Rangoon Kitchen</h2>
+            <p id="p-receipt-address" style="font-size: 11px; margin: 2px 0;">Shop Address</p>
+            <p id="p-receipt-phone" style="font-size: 11px; margin: 2px 0;">Phone: 09x-xxx-xxx</p>
+            <div style="border-bottom: 1px dashed black; margin: 6px 0;"></div>
         </div>
-        <div class="space-y-1 text-[11px]">
+        <div style="font-size: 11px; line-height: 1.4;">
             <div><b>Table/Target:</b> <span id="p-receipt-table">TABLE</span></div>
             <div><b>Time:</b> <span id="p-receipt-time">00:00</span></div>
         </div>
-        <div class="border-b border-dashed border-black my-2"></div>
-        <div id="p-receipt-items-list" class="space-y-1.5 text-[11px]"></div>
-        <div class="border-b border-dashed border-black my-2"></div>
-        <div class="flex justify-between font-black text-sm">
+        <div style="border-bottom: 1px dashed black; margin: 6px 0;"></div>
+        <div id="p-receipt-items-list" style="font-size: 11px; line-height: 1.5;"></div>
+        <div style="border-bottom: 1px dashed black; margin: 6px 0;"></div>
+        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 13px;">
             <span>TOTAL AMOUNT:</span>
             <span id="p-receipt-total">0 B</span>
         </div>
-        <div class="text-center mt-4 text-[10px] pt-2 border-t border-dashed border-black">
+        <div style="text-align: center; margin-top: 12px; font-size: 10px; border-top: 1px dashed black; padding-top: 6px;">
             <p id="p-receipt-footer">Thank you!</p>
         </div>
     </div>
@@ -221,7 +235,6 @@
         setInterval(() => { document.getElementById('live-clock').innerText = new Date().toLocaleString(); }, 1000);
         let db = null; let base64ImageString = ""; let rawOrdersSnapshotData = {};
 
-        // ⚠️ FIREBASE CONFIG ဖြည့်ရန် ⚠️
         const firebaseConfig = {
             apiKey: "AIzaSyC6aJ6JwNrjEKbnmcPKkqpjm0c6ok6cHas",
   authDomain: "rangoon-kitchen.firebaseapp.com",
@@ -236,7 +249,6 @@
             const savedTheme = localStorage.getItem('pos-theme') || 'dark';
             setThemeMode(savedTheme);
 
-            // စက္ကူအရွယ်အစား setting အဟောင်းကို ပြန်ဖတ်ခြင်း
             const savedPaperSize = localStorage.getItem('pos-paper-size') || '80mm';
             document.getElementById('cfg-paper-size').value = savedPaperSize;
 
@@ -253,10 +265,7 @@
             }
         };
 
-        // Paper Size ဆက်တင် သိမ်းဆည်းရန်
-        function savePrinterSizeSetting(val) {
-            localStorage.setItem('pos-paper-size', val);
-        }
+        function savePrinterSizeSetting(val) { localStorage.setItem('pos-paper-size', val); }
 
         function saveReceiptConfiguration() {
             localStorage.setItem('receipt-shop-name', document.getElementById('cfg-shop-name').value.trim());
@@ -266,17 +275,14 @@
             alert("✅ Receipt Configurations Saved Successfully!");
         }
 
-        // 🖨️ Manual Print Function (ကိုယ်တိုင်နှိပ်မှ Print ထွက်မည့်စနစ်)
         function triggerManualReceiptPrint(orderKey) {
             const order = rawOrdersSnapshotData[orderKey];
             if (!order) return;
 
-            // ဆက်တင်ထဲက သတ်မှတ်ထားတဲ့ စာရွက် size အတိုင်း Class အစားထိုးခြင်း
             const paperSize = localStorage.getItem('pos-paper-size') || '80mm';
             const printArea = document.getElementById('receipt-print-area');
             printArea.className = `print-area font-mono text-xs text-black print-${paperSize}`;
 
-            // ဘောင်ချာထဲသို့ ဒေတာများ ထည့်သွင်းခြင်း
             document.getElementById('p-receipt-shop').innerText = localStorage.getItem('receipt-shop-name') || "Rangoon Kitchen";
             document.getElementById('p-receipt-address').innerText = localStorage.getItem('receipt-shop-address') || "";
             document.getElementById('p-receipt-phone').innerText = "Phone: " + (localStorage.getItem('receipt-shop-phone') || "");
@@ -288,21 +294,12 @@
             Object.values(order.items).forEach(item => {
                 let cost = item.price * item.qty;
                 totalSum += cost;
-                let addTxt = (item.addons && item.addons.length > 0) ? `<div class="text-[9px] pl-2">+ ${item.addons.join(', ')}</div>` : '';
-                listHtml += `
-                    <div>
-                        <div class="flex justify-between">
-                            <span>${item.name} x${item.qty}</span>
-                            <span>${cost} B</span>
-                        </div>
-                        ${addTxt}
-                    </div>`;
+                let addTxt = (item.addons && item.addons.length > 0) ? `<div style="font-size: 9px; padding-left: 8px;">+ ${item.addons.join(', ')}</div>` : '';
+                listHtml += `<div style="margin-bottom: 4px;"><div style="display: flex; justify-content: space-between;"><span>${item.name} x${item.qty}</span><span>${cost} B</span></div>${addTxt}</div>`;
             });
 
             document.getElementById('p-receipt-items-list').innerHTML = listHtml;
             document.getElementById('p-receipt-total').innerText = totalSum + " Baht";
-
-            // Window Print dialog စနစ်ကို ခေါ်ယူခြင်း
             window.print();
         }
 
@@ -337,11 +334,7 @@
 
         function setThemeMode(mode) {
             const root = document.getElementById('app-root');
-            if (mode === 'light') {
-                root.classList.remove('dark');
-            } else {
-                root.classList.add('dark');
-            }
+            if (mode === 'light') { root.classList.remove('dark'); } else { root.classList.add('dark'); }
             localStorage.setItem('pos-theme', mode);
         }
 
@@ -356,25 +349,40 @@
             }
         }
 
+        // Realtime Main Engine
         function initPOSMainEngine() {
             if(!db) return;
             db.ref('orders').on('value', (snapshot) => {
                 const dashContainer = document.getElementById('dashboard-orders-container');
-                dashContainer.innerHTML = ''; let activeOrderCount = 0;
-                if(!snapshot.exists()) return;
+                dashContainer.innerHTML = ''; 
+                let activeOrderCount = 0;
+                let calculatedDailyTotal = 0;
+
+                if(!snapshot.exists()) {
+                    document.getElementById('daily-total-amount').innerText = "0";
+                    document.getElementById('order-badge-count').innerText = "0";
+                    return;
+                }
 
                 snapshot.forEach(child => {
                     const order = child.val(); order.key = child.key; rawOrdersSnapshotData[child.key] = order;
+                    
+                    let orderBillSum = 0;
+                    if (order.items) {
+                        Object.values(order.items).forEach(item => {
+                            orderBillSum += (item.price * item.qty);
+                        });
+                    }
+
+                    if (order.status === 'completed') { calculatedDailyTotal += orderBillSum; }
+
                     if(order.status !== 'completed' && order.status !== 'cancelled') {
                         activeOrderCount++;
-                        let orderBillSum = 0; let itemsHtml = "";
+                        let itemsHtml = "";
 
                         Object.values(order.items).forEach(item => {
-                            let itemCost = item.price * item.qty; orderBillSum += itemCost;
-                            let addonsText = "";
-                            if (item.addons && item.addons.length > 0) {
-                                addonsText = `<div class="text-[10px] text-amber-500 font-bold">➕ အပိုဆောင်း: ${item.addons.join(', ')}</div>`;
-                            }
+                            let itemCost = item.price * item.qty;
+                            let addonsText = (item.addons && item.addons.length > 0) ? `<div class="text-[10px] text-amber-500 font-bold">➕ အပိုဆောင်း: ${item.addons.join(', ')}</div>` : '';
 
                             itemsHtml += `
                                 <div class="text-xs font-mono bg-slate-100 dark:bg-slate-950/50 p-2 rounded-lg border dark:border-slate-800">
@@ -396,29 +404,42 @@
                         }
 
                         dashContainer.innerHTML += `
-                            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-3 flex flex-col justify-between shadow-sm">
+                            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl space-y-3 flex flex-col justify-between shadow-sm h-fit">
                                 <div class="space-y-2">
                                     <div class="flex justify-between items-center border-b dark:border-slate-800 pb-2">
                                         <span class="text-xs font-black text-emerald-400">📍 ${order.table_id}</span>
                                         <span class="text-[10px] text-slate-400">${order.time}</span>
                                     </div>
                                     <div class="text-[11px] text-slate-400">${labelText.split("မြေပုံလင့်ခ်:")[0]}</div>
-                                    <div class="space-y-1.5 max-h-48 overflow-y-auto custom-scroll">${itemsHtml}</div>
+                                    <div class="space-y-1.5 max-h-40 overflow-y-auto custom-scroll">${itemsHtml}</div>
                                 </div>
-                                <div class="space-y-2 pt-2 border-t dark:border-slate-800">
-                                    <div class="flex justify-between items-center font-black text-sm text-emerald-500">
+                                <div class="space-y-1.5 pt-2 border-t dark:border-slate-800">
+                                    <div class="flex justify-between items-center font-black text-sm text-emerald-500 mb-1">
                                         <span>Total:</span><span>${orderBillSum} B</span>
                                     </div>
                                     ${mapButtonHtml}
-                                    <!-- 🖨️ PRINT BILL BUTTON (ဒီခလုတ်ကိုနှိပ်မှ Print ထွက်မည်ဖြစ်သည်) -->
                                     <button onclick="triggerManualReceiptPrint('${order.key}')" class="w-full bg-amber-500 text-slate-950 font-black py-1.5 rounded-xl text-xs flex items-center justify-center gap-1"><i class="fa-solid fa-print"></i> PRINT RECEIPT</button>
-                                    <button onclick="db.ref('orders/${order.key}').update({ status: 'completed' })" class="w-full bg-emerald-500 text-slate-950 font-black py-1.5 rounded-xl text-xs">CLOSE BILL</button>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <button onclick="db.ref('orders/${order.key}').update({ status: 'completed' })" class="bg-emerald-500 text-slate-950 font-black py-1.5 rounded-xl text-xs">CLOSE BILL</button>
+                                        <button onclick="cancelTargetOrder('${order.key}')" class="bg-rose-500 text-white font-black py-1.5 rounded-xl text-xs hover:bg-rose-600 transition">CANCEL</button>
+                                    </div>
                                 </div>
                             </div>`;
                     }
                 });
-                document.getElementById('order-badge-count').innerText = `Active: ${activeOrderCount}`;
+                
+                document.getElementById('daily-total-amount').innerText = calculatedDailyTotal.toLocaleString();
+                document.getElementById('order-badge-count').innerText = activeOrderCount;
             });
+        }
+
+        function cancelTargetOrder(orderKey) {
+            if(confirm("⚠️ အော်ဒါကို ပယ်ဖျက် (Cancel) လုပ်ဖို့ သေချာပါသလားဗျာ?")) {
+                if(db) {
+                    db.ref(`orders/${orderKey}`).update({ status: 'cancelled' })
+                      .then(() => { alert("❌ အော်ဒါကို အောင်မြင်စွာ ပယ်ဖျက်ပြီးပါပြီ။"); });
+                }
+            }
         }
 
         function initProductsRealtimeLoader() {
