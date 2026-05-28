@@ -151,9 +151,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
-        // ⚠️ သင့်ရဲ့ Firebase Config ကို ဒီမှာ အစားထိုးပါ
+        // ⚠️ သင့်ရဲ့ Firebase Config ကို ဒီမှာ အမှန်အတိုင်း ပြန်ထည့်ပေးပါ
         const firebaseConfig = {
-           apiKey: "AIzaSyC6aJ6JwNrjEKbnmcPKkqpjm0c6ok6cHas",
+            apiKey: "AIzaSyC6aJ6JwNrjEKbnmcPKkqpjm0c6ok6cHas",
   authDomain: "rangoon-kitchen.firebaseapp.com",
   databaseURL: "https://rangoon-kitchen-default-rtdb.firebaseio.com",
   projectId: "rangoon-kitchen",
@@ -170,16 +170,22 @@
             document.body.style.overflow = "auto";
         }, 3500);
 
-        let activeOrderId = null; // တင်လိုက်တဲ့ အော်ဒါ ID ကို မှတ်ထားရန်
+        let activeOrderId = null; 
 
-        // --- ၄။ FIREBASE API မှ MENU နှင့် ပုံများကို ဆွဲထုတ်ပြသခြင်း ---
-        const menuRef = ref(database, 'menus');
+        // 🛠️ ပြင်ဆင်ချက်- လမ်းကြောင်းကို 'menus' မဟုတ်ဘဲ အပြင်ဘက်ဆုံး '/' ကနေ တိုက်ရိုက်ဖတ်ခိုင်းလိုက်ပါတယ်
+        const menuRef = ref(database, '/'); 
+        
         onValue(menuRef, (snapshot) => {
             const data = snapshot.val();
             const container = document.getElementById('menu-list-container');
-            container.innerHTML = ""; // Clear loader
+            container.innerHTML = ""; 
 
-            if(!data) {
+            // အကယ်၍ 'orders' node ပါ ရောပြီးပါလာရင် ဖယ်ထုတ်ပစ်ရန်
+            if(data && data.orders) {
+                delete data.orders; 
+            }
+
+            if(!data || Object.keys(data).length === 0) {
                 container.innerHTML = "<p>No menu items found in Firebase Database.</p>";
                 return;
             }
@@ -187,15 +193,24 @@
             // Loop ပတ်ပြီး UI ဆောက်ခြင်း
             Object.keys(data).forEach(key => {
                 const item = data[key];
+                
+                // ဒေတာထဲမှာ နာမည် သို့မဟုတ် ဈေးနှုန်းမပါရင် ကျော်သွားရန် (orders node တွေ မှားမဝင်စေရန်)
+                if(!item.name && !item.title) return; 
+
+                // Database ထဲမှာ စာလုံးပေါင်းက name ဖြစ်ဖြစ် title ဖြစ်ဖြစ်၊ price ဖြစ်ဖြစ် cost ဖြစ်ဖြစ် ဖတ်ပေးမည့်စနစ်
+                const itemName = item.name || item.title || "Unknown Item";
+                const itemPrice = item.price || item.cost || 0;
+                const itemImage = item.image || item.img || 'https://via.placeholder.com/50';
+
                 const itemHtml = `
-                    <div class="menu-item" data-id="${key}" data-name="${item.name}" data-price="${item.price}">
+                    <div class="menu-item" data-id="${key}" data-name="${itemName}" data-price="${itemPrice}">
                         <div class="menu-main">
                             <div class="menu-img-box">
-                                <img src="${item.image || 'https://via.placeholder.com/50'}" class="menu-img" alt="${item.name}">
+                                <img src="${itemImage}" class="menu-img" alt="${itemName}">
                             </div>
                             <div class="menu-details">
-                                <h4 class="item-name">${item.name}</h4>
-                                <p class="item-price">${item.price} Baht</p>
+                                <h4 class="item-name">${itemName}</h4>
+                                <p class="item-price">${itemPrice} Baht</p>
                             </div>
                             <div class="quantity-control">
                                 <button class="btn-qty minus-btn">-</button>
@@ -255,7 +270,7 @@
                 navigator.geolocation.getCurrentPosition(position => {
                     const lat = position.coords.latitude;
                     const lon = position.coords.longitude;
-                    document.getElementById('cusLocation').value = `https://maps.google.com/?q=${lat},${lon}`;
+                    document.getElementById('cusLocation').value = `http://maps.google.com/?q=${lat},${lon}`;
                     document.getElementById('locationBtn').innerText = "✅ တည်နေရာ ရရှိပါပြီ";
                     document.getElementById('locationBtn').style.color = "#10b981";
                 });
@@ -288,24 +303,21 @@
                 timestamp: new Date().toISOString()
             };
 
+            // အော်ဒါများကို orders ဆိုသည့် သီးသန့် node အောက်တွင်သွားသိမ်းမည်
             const ordersRef = ref(database, 'orders');
             const newOrderRef = push(ordersRef);
-            activeOrderId = newOrderRef.key; // ၅။ Cancel ဖျက်ဖို့အတွက် Key ကို သိမ်းထားခြင်း
+            activeOrderId = newOrderRef.key; 
 
             set(newOrderRef, orderData).then(() => {
                 alert("အော်ဒါ တင်ပြီးပါပြီ ခင်ဗျာ။");
-                
-                // ၅။ အော်ဒါ တင်ပြီးသွားရင် Cancel Box ကို ဖော်ပြပေးခြင်း
                 document.getElementById('currentOrderId').innerText = activeOrderId;
                 document.getElementById('statusBox').style.display = "block";
-                
-                // Form ရှင်းလင်းခြင်း
                 document.querySelectorAll('.qty-val').forEach(v => v.innerText = "0");
                 updateTotal();
             });
         };
 
-        // --- ၅။ CANCEL ORDER FUNCTIONALITY (ဖျက်ခွင့်ပေးခြင်း) ---
+        // --- CANCEL ORDER FUNCTIONALITY ---
         document.getElementById('cancelOrderBtn').onclick = function() {
             if (activeOrderId && confirm("ဤအော်ဒါကို တကယ်ပဲ Cancel ချင်ပါသလား?")) {
                 const specificOrderRef = ref(database, `orders/${activeOrderId}`);
