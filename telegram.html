@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
+    <style>
+    body {
+        overflow-y: scroll !important; /* 👈 အပေါ်အောက် အမြဲတမ်း Scroll ဆွဲလို့ရအောင် လုပ်တာပါ */
+    }
+    .scrollable-body {
+        min-height: calc(100vh - 140px);
+        padding-bottom: 140px; /* အောက်ခြေ Footer နဲ့ မကွယ်အောင် အောက်နားကို ချန်ထားတာပါ */
+    }
+</style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rangoon Kitchen - Customer Order</title>
@@ -11,14 +20,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>tailwind.config = { darkMode: 'class' }</script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans overflow-hidden">
-    <div class="scrollable-body"
-        .scrollable-body { 
-    min-height: calc(100vh - 140px); padding: 20px; 
-    padding-bottom: 120px;}
-        body { 
-    margin: 0; padding: 0;
-    overflow-y: auto;+}>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
         
     <header class="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 shrink-0">
         <h1 class="text-sm font-black text-emerald-400 uppercase">Rangoon Kitchen</h1>
