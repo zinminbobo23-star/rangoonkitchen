@@ -108,7 +108,7 @@
             statusText.classList.remove('hidden'); statusText.innerText = "📍 တည်နေရာ ရှာဖွေနေပါသည်...";
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition((pos) => {
-                    globalGeoLink = `http://googleusercontent.com/maps.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                    globalGeoLink = `http://maps.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
                     document.getElementById('cust-geo-coords').value = `${pos.coords.latitude},${pos.coords.longitude}`;
                     statusText.innerText = "✅ တည်နေရာ ဖမ်းယူမှု အောင်မြင်ပါသည်။";
                     statusText.className = "text-[10px] text-emerald-400 text-center mt-1";
