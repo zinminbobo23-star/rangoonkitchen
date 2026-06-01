@@ -108,7 +108,7 @@
             statusText.classList.remove('hidden'); statusText.innerText = "📍 တည်နေရာ ရှာဖွေနေပါသည်...";
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition((pos) => {
-                    globalGeoLink = `http://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                    globalGeoLink = `http://maps.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
                     document.getElementById('cust-geo-coords').value = `${pos.coords.latitude},${pos.coords.longitude}`;
                     statusText.innerText = "✅ တည်နေရာ ဖမ်းယူမှု အောင်မြင်ပါသည်။";
                     statusText.className = "text-[10px] text-emerald-400 text-center mt-1";
@@ -147,8 +147,8 @@
                     }
 
                     container.innerHTML += `
-    <div class="menu-item bg-slate-900 border border-slate-800/80 p-4 rounded-2xl space-y-3 shadow-sm" data-cat="${itemCategory}">
-        <div class="flex gap-3 items-center">
+                        <div class="bg-slate-900 border border-slate-800/80 p-4 rounded-2xl space-y-3 shadow-sm">
+                            <div class="flex gap-3 items-center">
                                 <img src="${p.image || ''}" class="w-16 h-16 object-cover rounded-xl bg-slate-950 shrink-0">
                                 <div class="flex-grow">
                                     <div class="text-xs font-black text-slate-200">${p.name}</div>
@@ -168,34 +168,7 @@
                 });
             });
         }
-// 🎯 ပုံထဲက အပိတ် Bracket တွေရဲ့ အောက်နားမှာ သွားထည့်ပါ
-setupCategoryFilter();
 
-function setupCategoryFilter() {
-    document.querySelectorAll('.cat-btn').forEach(btn => {
-        btn.onclick = () => {
-            // ခလုတ်အရောင် လင်း/မှိန် ပြောင်းခြင်း
-            document.querySelectorAll('.cat-btn').forEach(b => {
-                b.classList.remove('bg-emerald-500', 'text-slate-950', 'font-bold');
-                b.classList.add('bg-slate-900', 'border', 'border-slate-800', 'text-slate-300');
-            });
-            btn.classList.remove('bg-slate-900', 'border', 'border-slate-800', 'text-slate-300');
-            btn.classList.add('bg-emerald-500', 'text-slate-950', 'font-bold');
-
-            const selectedCat = btn.getAttribute('data-cat');
-
-            // Category တူတဲ့ မုန့်တွေကိုပဲ ချန်ပြီး ကျန်တာဖျောက်ခြင်း
-            document.querySelectorAll('.menu-item').forEach(item => {
-                const itemCat = item.getAttribute('data-cat');
-                if (selectedCat === 'all' || itemCat === selectedCat) {
-                    item.style.setProperty('display', 'block', 'important');
-                } else {
-                    item.style.setProperty('display', 'none', 'important');
-                }
-            });
-        };
-    });
-}
         // Add-ons ခြစ်တာတွေ လိုက်တွက်ပေးသည့် စနစ်သစ်
         function recalculateDynamicAddons(pKey, basePrice) {
             if (!shoppingCart[pKey]) return; 
